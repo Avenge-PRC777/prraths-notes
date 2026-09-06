@@ -155,3 +155,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding: 1.2rem 0;
   .word-title { font-size: 1.8rem; }
   table { display: block; overflow-x: auto; }
 }
+
+.prose img, .examples img { max-width: 100%; height: auto; display: block; margin: 1.2rem 0; border: 1px solid var(--rule); }
+.prose figure { margin: 1.2rem 0; }
+.prose figcaption { font-family: var(--sans); font-size: .78rem; color: var(--ink-3); margin-top: .4rem; }

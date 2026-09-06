@@ -18,6 +18,7 @@ function inline(s) {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 }
 
@@ -233,6 +234,80 @@ $('#save').onclick = doSave;
 
 document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); doSave(); }
+});
+
+
+/* ---------- images: paste or drop into the body ---------- */
+const bodyEl = form.elements.body;
+
+function insertAtCursor(text) {
+  const s = bodyEl.selectionStart ?? bodyEl.value.length;
+  const e = bodyEl.selectionEnd ?? s;
+  const before = bodyEl.value.slice(0, s);
+  const after = bodyEl.value.slice(e);
+  bodyEl.value = before + text + after;
+  const pos = s + text.length;
+  bodyEl.setSelectionRange(pos, pos);
+  bodyEl.focus();
+  render(); save();
+}
+
+async function uploadImage(file, suggestedName) {
+  if (!file) return;
+  const name = suggestedName || file.name?.replace(/\.[^.]+$/, '') || 'pasted-image';
+  status.className = 'status';
+  status.textContent = `Uploading ${file.type.split('/')[1] || 'image'}…`;
+
+  const b64 = await new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(String(fr.result).split(',')[1]);
+    fr.onerror = rej;
+    fr.readAsDataURL(file);
+  });
+
+  const placeholder = `\n<!-- uploading ${name}… -->\n`;
+  insertAtCursor(placeholder);
+
+  try {
+    const r = await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: b64, mime: file.type, name }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Upload failed.');
+    bodyEl.value = bodyEl.value.replace(placeholder, `\n![${name}](${j.url})\n`);
+    status.className = 'status ok';
+    status.innerHTML = `Added <code>${j.file}</code>`;
+    setTimeout(() => { if (status.classList.contains('ok')) status.textContent = ''; }, 5000);
+  } catch (err) {
+    bodyEl.value = bodyEl.value.replace(placeholder, '');
+    status.className = 'status err';
+    status.textContent = err.message;
+  }
+  render(); save();
+}
+
+bodyEl.addEventListener('paste', (e) => {
+  const items = [...(e.clipboardData?.items || [])];
+  const img = items.find(i => i.type.startsWith('image/'));
+  if (!img) return;                     // plain text pastes behave normally
+  e.preventDefault();
+  const f = img.getAsFile();
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  uploadImage(f, `pasted-${stamp}`);
+});
+
+['dragover', 'dragenter'].forEach(ev =>
+  bodyEl.addEventListener(ev, (e) => { e.preventDefault(); bodyEl.style.borderColor = 'var(--ink)'; }));
+['dragleave', 'drop'].forEach(ev =>
+  bodyEl.addEventListener(ev, () => { bodyEl.style.borderColor = ''; }));
+
+bodyEl.addEventListener('drop', (e) => {
+  const f = [...(e.dataTransfer?.files || [])].find(x => x.type.startsWith('image/'));
+  if (!f) return;
+  e.preventDefault();
+  uploadImage(f);
 });
 
 restore();

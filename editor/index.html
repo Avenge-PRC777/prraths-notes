@@ -43,6 +43,7 @@
   .ex-row button:hover { border-color: #a03318; color: #a03318; }
   .hintline { font-family: var(--sans); font-size: .72rem; color: var(--ink-3); margin-top: .25rem; }
   .preview-label { font-family: var(--sans); font-size: .68rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3); margin-bottom: 1rem; }
+  #preview img { max-width: 100%; height: auto; display: block; margin: 1rem 0; border: 1px solid var(--rule); }
   .warn { font-family: var(--sans); font-size: .76rem; color: #8a5a00; background: #fdf6e3; border: 1px solid #e8d9a8; border-radius: 3px; padding: .5rem .7rem; margin-top: .8rem; }
   @media (max-width: 800px) {
     .split { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
@@ -113,7 +114,7 @@
 
       <label>Notes / body <span style="text-transform:none;letter-spacing:0;font-weight:400">— markdown, optional</span></label>
       <textarea name="body" class="body" placeholder="Write freely. **Bold**, *italic*, `code`, ## headings, - lists, tables.&#10;&#10;Link another entry with [[its-slug]]."></textarea>
-      <div class="hintline">Use <code>[[slug]]</code> to link another entry — it becomes a real link with an automatic backlink.</div>
+      <div class="hintline">Use <code>[[slug]]</code> to link another entry. Paste or drop an image right into the box to add it.</div>
 
       <div id="dupe"></div>
     </form>

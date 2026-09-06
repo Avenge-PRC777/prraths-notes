@@ -14,6 +14,10 @@ rendered on the right as you type. Toggle Word / Blog at the top. Hit Save
 (or Cmd-S) and it writes the .md file into src/content/ for you — no
 frontmatter to hand-write, no YAML to get wrong. Drafts survive a reload.
 
+**Images:** paste from the clipboard (Cmd-V) or drag a file straight into the
+markdown box. The file lands in `public/images/` and the markdown is inserted
+for you. Screenshots, photos, diagrams — PNG, JPEG, GIF, WebP, AVIF, up to 8 MB.
+
 Then:
 
 ```bash

@@ -56,12 +56,12 @@ function validate(d) {
   return null;
 }
 
-const body = (req) =>
+const body = (req, cap = 1e6) =>
   new Promise((res, rej) => {
     let s = '';
     req.on('data', (c) => {
       s += c;
-      if (s.length > 1e6) req.destroy();
+      if (s.length > cap) req.destroy();
     });
     req.on('end', () => res(s));
     req.on('error', rej);
@@ -78,6 +78,14 @@ const server = http.createServer(async (req, res) => {
   }
   if (url.pathname === '/app.js') {
     return send(200, 'text/javascript; charset=utf-8', fs.readFileSync(path.join(ROOT, 'editor/app.js')));
+  }
+  if (url.pathname.startsWith('/images/')) {
+    const name = path.basename(decodeURIComponent(url.pathname));
+    const f = path.join(ROOT, 'public/images', name);
+    if (!fs.existsSync(f)) return send(404, 'text/plain', 'Not found');
+    const ext = path.extname(f).slice(1).toLowerCase();
+    const mime = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif' }[ext] || 'application/octet-stream';
+    return res.writeHead(200, { 'Content-Type': mime }).end(fs.readFileSync(f));
   }
   if (url.pathname === '/site.css') {
     return send(200, 'text/css; charset=utf-8', fs.readFileSync(path.join(ROOT, 'src/styles/global.css')));
@@ -102,6 +110,32 @@ const server = http.createServer(async (req, res) => {
     const file = path.join(ROOT, DIRS[type], `${slug}.md`);
     if (!fs.existsSync(file)) return json(404, { error: 'Not found.' });
     return json(200, { raw: fs.readFileSync(file, 'utf8') });
+  }
+
+
+  // Clipboard/dropped images land in public/images and are referenced as /images/<name>.
+  if (url.pathname === '/api/upload' && req.method === 'POST') {
+    let d;
+    try { d = JSON.parse(await body(req, 12e6)); } catch { return json(400, { error: 'Image too large or malformed.' }); }
+
+    const okTypes = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/avif': 'avif' };
+    const ext = okTypes[d.mime];
+    if (!ext) return json(400, { error: `Unsupported image type${d.mime ? ` (${d.mime})` : ''}.` });
+
+    const buf = Buffer.from(String(d.data || ''), 'base64');
+    if (!buf.length) return json(400, { error: 'Empty image.' });
+    if (buf.length > 8 * 1024 * 1024) return json(413, { error: 'Image is larger than 8 MB.' });
+
+    const base = slugify(d.name || '') || 'image';
+    const dir = path.join(ROOT, 'public/images');
+    fs.mkdirSync(dir, { recursive: true });
+
+    let file = `${base}.${ext}`, n = 2;
+    while (fs.existsSync(path.join(dir, file))) file = `${base}-${n++}.${ext}`;
+
+    fs.writeFileSync(path.join(dir, file), buf);
+    console.log(`  image  public/images/${file}  (${(buf.length / 1024).toFixed(0)} KB)`);
+    return json(200, { ok: true, url: `/images/${file}`, file: `public/images/${file}` });
   }
 
   if (url.pathname === '/api/save' && req.method === 'POST') {

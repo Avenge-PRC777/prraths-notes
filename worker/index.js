@@ -55,6 +55,7 @@ const json = (obj, status = 200, headers = {}) =>
 /* ---------------- GitHub ---------------- */
 
 const REPO = (env) => env.GITHUB_REPO || 'Avenge-PRC777/prraths-notes';
+const branch = (env) => env.GITHUB_BRANCH || 'main';
 
 const gh = (env, path, init = {}) =>
   fetch(`https://api.github.com/repos/${REPO(env)}${path}`, {
@@ -90,7 +91,7 @@ async function ghPut(env, filePath, contentB64, message) {
 // mean N pushes and N Cloudflare builds; the Git Data API lets us stage every
 // change into a single tree and move the branch once.
 async function ghCommit(env, changes, message) {
-  const ref = await gh(env, `/git/ref/heads/${env.GITHUB_BRANCH || 'main'}`);
+  const ref = await gh(env, `/git/ref/heads/${branch(env)}`);
   if (!ref.ok) throw new Error(`GitHub ${ref.status}: could not read branch.`);
   const headSha = (await ref.json()).object.sha;
 
@@ -118,7 +119,7 @@ async function ghCommit(env, changes, message) {
   if (!commitRes.ok) throw new Error(`GitHub ${commitRes.status}: ${(await commitRes.text()).slice(0, 200)}`);
   const newSha = (await commitRes.json()).sha;
 
-  const upd = await gh(env, `/git/refs/heads/${env.GITHUB_BRANCH || 'main'}`, {
+  const upd = await gh(env, `/git/refs/heads/${branch(env)}`, {
     method: 'PATCH',
     body: JSON.stringify({ sha: newSha }),
   });
@@ -126,15 +127,28 @@ async function ghCommit(env, changes, message) {
   return { sha: newSha };
 }
 
-// Which of these paths actually exist, so we can report misses and skip a
-// commit that would change nothing.
+// Which of these paths exist, so we can report misses and skip a commit that
+// would change nothing. One recursive tree read rather than a HEAD per path:
+// Workers allow 50 subrequests per request on the free plan, and checking a
+// 50-file batch one at a time would blow through that.
 async function ghExistingPaths(env, paths) {
-  const found = new Set();
-  await Promise.all(paths.map(async (path) => {
-    const r = await gh(env, `/contents/${encodeURI(path)}`);
-    if (r.ok) found.add(path);
-  }));
-  return found;
+  const want = new Set(paths);
+  const ref = await gh(env, `/git/ref/heads/${branch(env)}`);
+  if (!ref.ok) throw new Error(`GitHub ${ref.status}: could not read branch.`);
+  const tree = await gh(env, `/git/trees/${(await ref.json()).object.sha}?recursive=1`);
+  if (!tree.ok) throw new Error(`GitHub ${tree.status}: could not read tree.`);
+  const t = await tree.json();
+  // On a very large repo GitHub truncates the listing. Reporting every file as
+  // "already gone" would be worse than a slower per-path check, so fall back.
+  if (t.truncated) {
+    const found = new Set();
+    await Promise.all(paths.map(async (path) => {
+      const r = await gh(env, `/contents/${encodeURI(path)}`);
+      if (r.ok) found.add(path);
+    }));
+    return found;
+  }
+  return new Set(t.tree.filter((e) => e.type === 'blob' && want.has(e.path)).map((e) => e.path));
 }
 
 /* ---------------- content helpers ---------------- */

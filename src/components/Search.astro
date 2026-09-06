@@ -70,7 +70,7 @@ const { autofocus = false } = Astro.props;
     const raw = q.value.trim();
     sel = -1;
     if (!raw) {
-      out.innerHTML = '<p class="hint">Start typing — results appear as you go. <kbd>↑</kbd> <kbd>↓</kbd> to move, <kbd>↵</kbd> to open.</p>';
+      out.innerHTML = '';
       rows = []; return;
     }
     if (!DATA) { out.innerHTML = '<p class="hint">Loading…</p>'; return; }

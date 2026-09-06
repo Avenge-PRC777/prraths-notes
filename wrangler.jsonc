@@ -8,7 +8,7 @@
     "binding": "ASSETS",
     "not_found_handling": "404-page"
   },
-  "vars": {
-    "GITHUB_REPO": "Avenge-PRC777/prraths-notes"
-  }
+  // Secrets are managed in the Cloudflare dashboard. Without this, every
+  // `wrangler deploy` would delete them and the writer would break.
+  "keep_vars": true
 }

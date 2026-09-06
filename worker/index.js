@@ -138,6 +138,18 @@ export default {
 
     if (!p.startsWith('/api/')) return env.ASSETS.fetch(req);
 
+    // Diagnostic: which binding names arrived? Names only — never values.
+    if (p === '/api/_env') {
+      return json({
+        keys: Object.keys(env).sort(),
+        present: {
+          ADMIN_PASSWORD_HASH: typeof env.ADMIN_PASSWORD_HASH,
+          SESSION_SECRET: typeof env.SESSION_SECRET,
+          GITHUB_TOKEN: typeof env.GITHUB_TOKEN,
+        },
+      });
+    }
+
     const missing = ['ADMIN_PASSWORD_HASH', 'SESSION_SECRET', 'GITHUB_TOKEN'].filter((k) => !env[k]);
     if (missing.length) {
       return json({ error: `Server is missing: ${missing.join(', ')}.` }, 503);

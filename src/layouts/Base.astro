@@ -1,0 +1,56 @@
+---
+import '../styles/global.css';
+const { title, description = "A personal collection of words, concepts, and writing." } = Astro.props;
+const path = Astro.url.pathname;
+const isActive = (p) => path === p || (p !== '/' && path.startsWith(p));
+---
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>" />
+  <script is:inline>
+    const t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.dataset.theme = t;
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/">prrath<span class="dot">.</span>notes</a>
+      <nav class="nav">
+        <a href="/words" aria-current={isActive('/words') ? 'page' : undefined}>Words</a>
+        <a href="/concepts" aria-current={isActive('/concepts') ? 'page' : undefined}>Concepts</a>
+        <a href="/blog" aria-current={isActive('/blog') ? 'page' : undefined}>Blog</a>
+        <a href="/search" aria-current={isActive('/search') ? 'page' : undefined}>Search</a>
+        <button class="theme-btn" id="theme-btn" aria-label="Toggle theme">◐</button>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <slot />
+  </main>
+  <footer>
+    <div class="wrap">Written and kept by prrath · built with Astro · <a href="/search">search everything</a></div>
+  </footer>
+  <script is:inline>
+    document.getElementById('theme-btn').onclick = () => {
+      const n = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = n;
+      localStorage.setItem('theme', n);
+    };
+    // "/" anywhere jumps to search
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
+        const q = document.getElementById('q');
+        if (q) { e.preventDefault(); q.focus(); }
+        else { location.href = '/search'; }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+const [w, c, b] = await Promise.all([getCollection('words'), getCollection('concepts'), getCollection('blog')]);
+const counts = {};
+for (const e of [...w, ...c, ...b]) for (const t of e.data.tags) counts[t] = (counts[t] || 0) + 1;
+const tags = Object.entries(counts).sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+---
+<Base title="Tags — prrath.notes">
+  <div class="wrap">
+    <div style="padding-top:2rem"><h1>Tags</h1>
+    <p style="color:var(--ink-2);margin:.3rem 0 1.2rem">Everything, cross-cut.</p></div>
+    <div class="tags">
+      {tags.map(([t, n]) => (
+        <a class="tag" href={`/tags/${t}/`} style="font-size:.9rem;padding:.35rem .8rem">#{t} <span style="opacity:.55">{n}</span></a>
+      ))}
+    </div>
+  </div>
+</Base>

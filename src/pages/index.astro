@@ -1,0 +1,63 @@
+---
+import Base from '../layouts/Base.astro';
+import Search from '../components/Search.astro';
+import { getCollection } from 'astro:content';
+
+const words = (await getCollection('words')).sort((a,b) => b.data.added - a.data.added);
+const concepts = (await getCollection('concepts')).sort((a,b) => b.data.added - a.data.added);
+const blog = (await getCollection('blog')).sort((a,b) => b.data.added - a.data.added);
+const fmt = (d) => d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+---
+<Base title="prrath.notes — words, concepts, writing">
+  <div class="wrap">
+    <div class="hero">
+      <h1>Things I've learned, kept in one place.</h1>
+      <p>Words with their meanings and the sentences that made them stick. Concepts explained the way I finally understood them. And some writing.</p>
+      <div class="stats">
+        <div class="stat"><b>{words.length}</b><span>Words</span></div>
+        <div class="stat"><b>{concepts.length}</b><span>Concepts</span></div>
+        <div class="stat"><b>{blog.length}</b><span>Posts</span></div>
+      </div>
+    </div>
+
+    <Search />
+
+    <div class="section-head"><h2>Latest words</h2><a href="/words">All words →</a></div>
+    <ul class="entry-list">
+      {words.slice(0,5).map(e => (
+        <li class="entry">
+          <div class="entry-meta">
+            <a class="entry-title" href={`/words/${e.id}/`}>{e.data.word}</a>
+            {e.data.partOfSpeech && <span class="pos">{e.data.partOfSpeech}</span>}
+            <span class="date">{fmt(e.data.added)}</span>
+          </div>
+          <p class="entry-sub">{e.data.meaning}</p>
+        </li>
+      ))}
+    </ul>
+
+    <div class="section-head"><h2>Concepts</h2><a href="/concepts">All concepts →</a></div>
+    <div class="grid">
+      {concepts.slice(0,4).map(e => (
+        <a class="card" href={`/concepts/${e.id}/`}>
+          <span class="badge badge-concept">{e.data.field || 'concept'}</span>
+          <h3>{e.data.title}</h3>
+          <p>{e.data.summary}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="section-head"><h2>Writing</h2><a href="/blog">All posts →</a></div>
+    <ul class="entry-list">
+      {blog.slice(0,4).map(e => (
+        <li class="entry">
+          <div class="entry-meta">
+            <a class="entry-title" href={`/blog/${e.id}/`}>{e.data.title}</a>
+            <span class="date">{fmt(e.data.added)}</span>
+          </div>
+          <p class="entry-sub">{e.data.blurb}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Base>

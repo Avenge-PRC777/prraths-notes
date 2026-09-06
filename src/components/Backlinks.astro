@@ -1,0 +1,18 @@
+---
+import { backlinksFor } from '../lib/links.js';
+const { id } = Astro.props;
+const links = await backlinksFor(id);
+---
+{links.length > 0 && (
+  <aside class="backlinks">
+    <h3>Mentioned in</h3>
+    <ul>
+      {links.map(l => (
+        <li>
+          <span class={`badge badge-${l.type}`}>{l.type}</span>
+          <a href={l.url} style="margin-left:.4rem">{l.title}</a>
+        </li>
+      ))}
+    </ul>
+  </aside>
+)}

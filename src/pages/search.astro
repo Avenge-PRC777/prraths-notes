@@ -1,0 +1,11 @@
+---
+import Base from '../layouts/Base.astro';
+import Search from '../components/Search.astro';
+---
+<Base title="Search — prrath.notes">
+  <div class="wrap">
+    <div style="padding-top:2rem"><h1>Search everything</h1>
+    <p style="color:var(--ink-2);margin:.3rem 0 0">Words, concepts and posts — all at once, as you type.</p></div>
+    <Search autofocus={true} />
+  </div>
+</Base>

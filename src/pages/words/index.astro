@@ -1,0 +1,39 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+const words = (await getCollection('words')).sort((a,b) => a.data.word.localeCompare(b.data.word));
+const groups = {};
+for (const w of words) {
+  const k = w.data.word[0].toUpperCase();
+  (groups[k] ||= []).push(w);
+}
+const letters = Object.keys(groups).sort();
+---
+<Base title="Words — prrath.notes">
+  <div class="wrap">
+    <div style="padding-top:2rem">
+      <h1>Words</h1>
+      <p style="color:var(--ink-2);margin:.3rem 0 0">{words.length} collected. Each one with what it means and a sentence that made it stick.</p>
+      <div class="tags" style="margin-top:1rem">
+        {letters.map(l => <a class="tag" href={`#${l}`}>{l}</a>)}
+      </div>
+    </div>
+    {letters.map(l => (
+      <section>
+        <h2 id={l} style="border-bottom:1px solid var(--rule);padding-bottom:.3rem">{l}</h2>
+        <ul class="entry-list">
+          {groups[l].map(e => (
+            <li class="entry">
+              <div class="entry-meta">
+                <a class="entry-title" href={`/words/${e.id}/`}>{e.data.word}</a>
+                {e.data.partOfSpeech && <span class="pos">{e.data.partOfSpeech}</span>}
+              </div>
+              <p class="entry-sub">{e.data.meaning}</p>
+              <div class="tags">{e.data.tags.map(t => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </div>
+</Base>

@@ -1,0 +1,48 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+import Backlinks from '../../components/Backlinks.astro';
+
+export async function getStaticPaths() {
+  const words = await getCollection('words');
+  return words.map(e => ({ params: { id: e.id }, props: { e } }));
+}
+const { e } = Astro.props;
+const { Content } = await render(e);
+const d = e.data;
+---
+<Base title={`${d.word} — prrath.notes`} description={d.meaning}>
+  <div class="wrap">
+    <a class="backlink" href="/words">← Words</a>
+    <div class="word-head">
+      <span class="badge badge-word">word</span>
+      <h1 class="word-title">{d.word}</h1>
+      <div class="entry-meta">
+        {d.pronunciation && <span class="pron">{d.pronunciation}</span>}
+        {d.partOfSpeech && <span class="pos">{d.partOfSpeech}</span>}
+      </div>
+      <p class="meaning">{d.meaning}</p>
+    </div>
+
+    {d.examples.length > 0 && (
+      <section>
+        <h2>In a sentence</h2>
+        <ul class="examples">{d.examples.map(x => <li>{x}</li>)}</ul>
+      </section>
+    )}
+
+    {d.etymology && (
+      <section>
+        <h2>Where it comes from</h2>
+        <div class="etym">{d.etymology}</div>
+      </section>
+    )}
+
+    <div class="prose"><Content /></div>
+
+    <Backlinks id={e.id} />
+
+    <hr />
+    <div class="tags">{d.tags.map(t => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div>
+  </div>
+</Base>

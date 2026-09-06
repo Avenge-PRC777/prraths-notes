@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+const posts = (await getCollection('blog')).sort((a,b) => b.data.added - a.data.added);
+const fmt = (d) => d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+---
+<Base title="Blog — prrath.notes">
+  <div class="wrap">
+    <div style="padding-top:2rem">
+      <h1>Writing</h1>
+      <p style="color:var(--ink-2);margin:.3rem 0 0">Thoughts, in my own words.</p>
+    </div>
+    <ul class="entry-list">
+      {posts.map(e => (
+        <li class="entry">
+          <div class="entry-meta">
+            <a class="entry-title" href={`/blog/${e.id}/`}>{e.data.title}</a>
+            <span class="date">{fmt(e.data.added)}</span>
+          </div>
+          <p class="entry-sub">{e.data.blurb}</p>
+          <div class="tags">{e.data.tags.map(t => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Base>

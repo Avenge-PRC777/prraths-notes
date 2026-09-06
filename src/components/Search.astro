@@ -1,0 +1,128 @@
+---
+const { autofocus = false } = Astro.props;
+---
+<div class="search-shell">
+  <span class="search-icon">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+    </svg>
+  </span>
+  <input id="q" type="search" autocomplete="off" spellcheck="false"
+         placeholder="Search words, concepts, writing…" data-autofocus={autofocus ? 'true' : undefined} />
+  <span class="kbd">/</span>
+</div>
+<div class="filters">
+  <button class="filter" data-f="all" aria-pressed="true">Everything</button>
+  <button class="filter" data-f="word" aria-pressed="false">Words</button>
+  <button class="filter" data-f="concept" aria-pressed="false">Concepts</button>
+  <button class="filter" data-f="blog" aria-pressed="false">Blog</button>
+</div>
+<div class="results" id="results"></div>
+
+<script>
+  const q = document.getElementById('q');
+  const out = document.getElementById('results');
+  if (q.dataset.autofocus) q.focus();
+
+  let DATA = null, filter = 'all', sel = -1, rows = [];
+
+  const load = async () => {
+    if (!DATA) DATA = await fetch('/search-index.json').then(r => r.json());
+    return DATA;
+  };
+  q.addEventListener('focus', load, { once: true });
+
+  const esc = (s) => s.replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+  // highlight + a window of context around the first match
+  function snippet(body, terms) {
+    const low = body.toLowerCase();
+    let at = -1;
+    for (const t of terms) { const i = low.indexOf(t); if (i > -1 && (at < 0 || i < at)) at = i; }
+    if (at < 0) return esc(body.slice(0, 130)) + (body.length > 130 ? '…' : '');
+    const s = Math.max(0, at - 45), e = Math.min(body.length, at + 105);
+    let txt = esc((s > 0 ? '…' : '') + body.slice(s, e) + (e < body.length ? '…' : ''));
+    for (const t of terms) {
+      txt = txt.replace(new RegExp(`(${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<mark>$1</mark>');
+    }
+    return txt;
+  }
+
+  function score(item, terms) {
+    const title = item.title.toLowerCase();
+    const sub = (item.sub || '').toLowerCase();
+    const body = (item.body || '').toLowerCase();
+    const tags = item.tags.join(' ').toLowerCase();
+    let s = 0;
+    for (const t of terms) {
+      if (title === t) s += 200;
+      else if (title.startsWith(t)) s += 100;
+      else if (title.includes(t)) s += 60;
+      if (tags.includes(t)) s += 30;
+      if (sub.includes(t)) s += 20;
+      if (body.includes(t)) s += 8;
+      else if (!title.includes(t) && !tags.includes(t) && !sub.includes(t)) return -1; // every term must appear
+    }
+    return s;
+  }
+
+  function render() {
+    const raw = q.value.trim();
+    sel = -1;
+    if (!raw) {
+      out.innerHTML = '<p class="hint">Start typing — results appear as you go. <kbd>↑</kbd> <kbd>↓</kbd> to move, <kbd>↵</kbd> to open.</p>';
+      rows = []; return;
+    }
+    if (!DATA) { out.innerHTML = '<p class="hint">Loading…</p>'; return; }
+
+    const terms = raw.toLowerCase().split(/\s+/).filter(Boolean);
+    rows = DATA
+      .filter(i => filter === 'all' || i.t === filter)
+      .map(i => ({ i, s: score(i, terms) }))
+      .filter(r => r.s > 0)
+      .sort((a, b) => b.s - a.s || a.i.title.localeCompare(b.i.title))
+      .slice(0, 25)
+      .map(r => r.i);
+
+    if (!rows.length) {
+      out.innerHTML = `<p class="hint">Nothing found for “${esc(raw)}”.</p>`;
+      return;
+    }
+    out.innerHTML = rows.map((i, n) => `
+      <a class="result" href="${i.url}" data-n="${n}">
+        <div class="entry-meta">
+          <span class="badge badge-${i.t}">${i.t}</span>
+          <span class="result-title">${snippet(i.title, terms)}</span>
+        </div>
+        <div class="result-ex">${snippet(i.sub || i.body, terms)}</div>
+      </a>`).join('');
+  }
+
+  const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+  q.addEventListener('input', async () => { await load(); render(); });
+
+  document.querySelectorAll('.filter').forEach(b => b.onclick = () => {
+    filter = b.dataset.f;
+    document.querySelectorAll('.filter').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  });
+
+  q.addEventListener('keydown', (e) => {
+    if (!rows.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      sel = e.key === 'ArrowDown'
+        ? (sel + 1) % rows.length
+        : (sel - 1 + rows.length) % rows.length;
+      out.querySelectorAll('.result').forEach((el, n) => el.classList.toggle('sel', n === sel));
+      out.querySelector('.sel')?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      location.href = rows[sel > -1 ? sel : 0].url;
+    } else if (e.key === 'Escape') {
+      q.value = ''; render();
+    }
+  });
+
+  render();
+</script>

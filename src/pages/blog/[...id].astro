@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+import Backlinks from '../../components/Backlinks.astro';
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map(e => ({ params: { id: e.id }, props: { e } }));
+}
+const { e } = Astro.props;
+const { Content } = await render(e);
+const d = e.data;
+const fmt = (x) => x.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+---
+<Base title={`${d.title} — prrath.notes`} description={d.blurb}>
+  <div class="wrap">
+    <a class="backlink" href="/blog">← Writing</a>
+    <div class="word-head">
+      <span class="badge badge-blog">blog</span>
+      <h1 style="margin:.5rem 0 .3rem">{d.title}</h1>
+      <span class="date">{fmt(d.added)}</span>
+      <p class="meaning">{d.blurb}</p>
+    </div>
+    <div class="prose"><Content /></div>
+    <Backlinks id={e.id} />
+
+    <hr />
+    <div class="tags">{d.tags.map(t => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div>
+  </div>
+</Base>

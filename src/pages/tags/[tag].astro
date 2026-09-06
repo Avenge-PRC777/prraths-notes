@@ -1,0 +1,34 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const [w, c, b] = await Promise.all([getCollection('words'), getCollection('concepts'), getCollection('blog')]);
+  const all = [
+    ...w.map(e => ({ t:'word', url:`/words/${e.id}/`, title:e.data.word, sub:e.data.meaning, tags:e.data.tags })),
+    ...c.map(e => ({ t:'concept', url:`/concepts/${e.id}/`, title:e.data.title, sub:e.data.summary, tags:e.data.tags })),
+    ...b.map(e => ({ t:'blog', url:`/blog/${e.id}/`, title:e.data.title, sub:e.data.blurb, tags:e.data.tags })),
+  ];
+  const tags = [...new Set(all.flatMap(i => i.tags))];
+  return tags.map(tag => ({ params: { tag }, props: { tag, items: all.filter(i => i.tags.includes(tag)) } }));
+}
+const { tag, items } = Astro.props;
+---
+<Base title={`#${tag} — prrath.notes`}>
+  <div class="wrap">
+    <a class="backlink" href="/tags">← All tags</a>
+    <h1>#{tag}</h1>
+    <p style="color:var(--ink-2)">{items.length} {items.length === 1 ? 'entry' : 'entries'}</p>
+    <ul class="entry-list">
+      {items.map(i => (
+        <li class="entry">
+          <div class="entry-meta">
+            <span class={`badge badge-${i.t}`}>{i.t}</span>
+            <a class="entry-title" href={i.url}>{i.title}</a>
+          </div>
+          <p class="entry-sub">{i.sub}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Base>

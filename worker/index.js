@@ -67,6 +67,8 @@ const gh = (env, path, init = {}) =>
     },
   });
 
+// Images only: the tree API takes UTF-8 text, so binary still goes through
+// the contents API (one image = one commit, and uploads are one at a time).
 async function ghPut(env, filePath, contentB64, message) {
   // A file that already exists needs its blob sha to update rather than fail.
   let sha;
@@ -84,29 +86,56 @@ async function ghPut(env, filePath, contentB64, message) {
   return { updated: !!sha };
 }
 
-async function ghDelete(env, filePath, message) {
-  const head = await gh(env, `/contents/${encodeURI(filePath)}`);
-  if (head.status === 404) return { missing: true };
-  if (!head.ok) throw new Error(`GitHub ${head.status}`);
-  const { sha } = await head.json();
+// One commit for many files. The contents API commits per call, which would
+// mean N pushes and N Cloudflare builds; the Git Data API lets us stage every
+// change into a single tree and move the branch once.
+async function ghCommit(env, changes, message) {
+  const ref = await gh(env, `/git/ref/heads/${env.GITHUB_BRANCH || 'main'}`);
+  if (!ref.ok) throw new Error(`GitHub ${ref.status}: could not read branch.`);
+  const headSha = (await ref.json()).object.sha;
 
-  const res = await gh(env, `/contents/${encodeURI(filePath)}`, {
-    method: 'DELETE',
-    body: JSON.stringify({ message, sha }),
+  const commit = await gh(env, `/git/commits/${headSha}`);
+  if (!commit.ok) throw new Error(`GitHub ${commit.status}: could not read head commit.`);
+  const baseTree = (await commit.json()).tree.sha;
+
+  // sha:null deletes; content writes. Blobs are created inline as UTF-8 text.
+  const tree = changes.map((c) =>
+    c.delete
+      ? { path: c.path, mode: '100644', type: 'blob', sha: null }
+      : { path: c.path, mode: '100644', type: 'blob', content: c.content });
+
+  const treeRes = await gh(env, '/git/trees', {
+    method: 'POST',
+    body: JSON.stringify({ base_tree: baseTree, tree }),
   });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`GitHub ${res.status}: ${t.slice(0, 200)}`);
-  }
-  return { deleted: true };
+  if (!treeRes.ok) throw new Error(`GitHub ${treeRes.status}: ${(await treeRes.text()).slice(0, 200)}`);
+  const treeSha = (await treeRes.json()).sha;
+
+  const commitRes = await gh(env, '/git/commits', {
+    method: 'POST',
+    body: JSON.stringify({ message, tree: treeSha, parents: [headSha] }),
+  });
+  if (!commitRes.ok) throw new Error(`GitHub ${commitRes.status}: ${(await commitRes.text()).slice(0, 200)}`);
+  const newSha = (await commitRes.json()).sha;
+
+  const upd = await gh(env, `/git/refs/heads/${env.GITHUB_BRANCH || 'main'}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ sha: newSha }),
+  });
+  if (!upd.ok) throw new Error(`GitHub ${upd.status}: ${(await upd.text()).slice(0, 200)}`);
+  return { sha: newSha };
 }
 
-const b64 = (str) => {
-  const bytes = enc.encode(str);
-  let bin = '';
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin);
-};
+// Which of these paths actually exist, so we can report misses and skip a
+// commit that would change nothing.
+async function ghExistingPaths(env, paths) {
+  const found = new Set();
+  await Promise.all(paths.map(async (path) => {
+    const r = await gh(env, `/contents/${encodeURI(path)}`);
+    if (r.ok) found.add(path);
+  }));
+  return found;
+}
 
 /* ---------------- content helpers ---------------- */
 
@@ -233,7 +262,8 @@ export default {
       }
 
       try {
-        const { updated } = await ghPut(env, file, b64(buildMarkdown(d)), `${updatedVerb(d)}: ${slug}`);
+        const updated = (await ghExistingPaths(env, [file])).has(file);
+        await ghCommit(env, [{ path: file, content: buildMarkdown(d) }], `${updatedVerb(d)}: ${slug}`);
         return json({
           ok: true, slug, file,
           updated,
@@ -252,7 +282,7 @@ export default {
       if (items.length > 50) return json({ error: 'Too many at once (max 50).' }, 400);
 
       const results = [];
-      // Sequential: GitHub rejects concurrent writes to the same branch.
+      const targets = [];
       for (const it of items) {
         const type = it.type;
         const slug = slugify(it.slug);
@@ -260,15 +290,30 @@ export default {
           results.push({ ...it, ok: false, error: 'Bad item.' });
           continue;
         }
-        const file = `${DIRS[type]}/${slug}.md`;
-        try {
-          const r = await ghDelete(env, file, `remove: ${slug}`);
-          results.push({ type, slug, file, ok: true, missing: !!r.missing });
-        } catch (e) {
-          results.push({ type, slug, file, ok: false, error: e.message });
-        }
+        targets.push({ type, slug, file: `${DIRS[type]}/${slug}.md` });
       }
-      return json({ ok: results.every((r) => r.ok), results });
+
+      if (!targets.length) return json({ ok: false, results }, 400);
+
+      try {
+        const present = await ghExistingPaths(env, targets.map((t) => t.file));
+        const doomed = targets.filter((t) => present.has(t.file));
+        targets.filter((t) => !present.has(t.file))
+          .forEach((t) => results.push({ ...t, ok: true, missing: true }));
+
+        if (doomed.length) {
+          const names = doomed.map((t) => t.slug);
+          const message = names.length === 1
+            ? `remove: ${names[0]}`
+            : `remove ${names.length} entries: ${names.join(', ')}`.slice(0, 240);
+          const { sha } = await ghCommit(env, doomed.map((t) => ({ path: t.file, delete: true })), message);
+          doomed.forEach((t) => results.push({ ...t, ok: true, commit: sha }));
+        }
+        return json({ ok: results.every((r) => r.ok), results, commits: doomed.length ? 1 : 0 });
+      } catch (e) {
+        targets.forEach((t) => { if (!results.some((r) => r.slug === t.slug)) results.push({ ...t, ok: false, error: e.message }); });
+        return json({ ok: false, results, error: e.message }, 502);
+      }
     }
 
     return json({ error: 'Not found.' }, 404);

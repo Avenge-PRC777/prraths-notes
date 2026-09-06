@@ -438,10 +438,13 @@ $('#d-go').onclick = async () => {
       selected.delete(delKey(x.type, x.slug));
       existing[x.type] = (existing[x.type] || []).filter(s => s !== x.slug);
     });
+    const removed = ok.filter(x => !x.missing).length;
+    const gone = ok.length - removed;
     log.textContent =
-      `Deleted ${ok.length} file${ok.length === 1 ? '' : 's'}.` +
-      (bad.length ? `\nFailed: ${bad.map(x => `${x.slug} (${x.error})`).join(', ')}` : '') +
-      `\nThe live site updates once the rebuild finishes.`;
+      `Deleted ${removed} file${removed === 1 ? '' : 's'}` +
+      (j.commits ? ' in one commit — a single rebuild.' : '.') +
+      (gone ? `\n${gone} already gone.` : '') +
+      (bad.length ? `\nFailed: ${bad.map(x => `${x.slug} (${x.error})`).join(', ')}` : '');
     renderDelList();
   } catch (e) {
     log.textContent = e.message;

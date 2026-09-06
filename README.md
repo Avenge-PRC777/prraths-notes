@@ -6,16 +6,21 @@ Public to read, private to edit (only you can push).
 ## Daily use
 
 ```bash
-npm run dev      # → localhost:4321, live reload
-npm run new word "petrichor"        # asks meaning, example, tags
-npm run new blog "Why I keep this"
+npm run write    # → localhost:4444, the writing desk
 ```
 
-Then finish the body in the file it prints, and:
+Split screen: fields and a markdown box on the left, the finished entry
+rendered on the right as you type. Toggle Word / Blog at the top. Hit Save
+(or Cmd-S) and it writes the .md file into src/content/ for you — no
+frontmatter to hand-write, no YAML to get wrong. Drafts survive a reload.
+
+Then:
 
 ```bash
 git add -A && git commit -m "petrichor" && git push
 ```
+
+There's also a terminal version if you prefer: `npm run new word "petrichor"`.
 
 The site rebuilds and redeploys itself in ~30 seconds.
 

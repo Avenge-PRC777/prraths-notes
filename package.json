@@ -12,5 +12,8 @@
     "@astrojs/markdown-remark": "^7.2.4",
     "astro": "^7.2.9",
     "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.127.1"
   }
 }

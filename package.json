@@ -13,9 +13,6 @@
     "astro": "^7.2.9",
     "unist-util-visit": "^5.1.0"
   },
-  "devDependencies": {
-    "wrangler": "^4.127.1"
-  },
   "engines": {
     "node": ">=22.12.0"
   }

@@ -83,6 +83,14 @@
   button.danger:disabled { background: var(--rule-2); cursor: default; }
   .del-log { font-family: var(--sans); font-size: .78rem; color: var(--ink-3); margin-top: .9rem; white-space: pre-wrap; }
 
+  .editing[hidden] { display: none !important; }
+  .editing { display: flex; align-items: center; gap: .7rem; padding: .45rem 1.1rem; background: #f4f1e8; border-bottom: 1px solid var(--rule); font-family: var(--sans); font-size: .78rem; color: var(--ink-2); }
+  .editing code { font-family: var(--mono); font-weight: 600; color: var(--ink); }
+  .editing button { margin-left: auto; padding: .2rem .6rem; font-size: .74rem; }
+  .pick-item { display: flex; align-items: center; gap: .6rem; padding: .45rem .7rem; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: .82rem; cursor: pointer; background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; text-align: left; color: var(--ink); }
+  .pick-item:last-child { border-bottom: 0; }
+  .pick-item:hover { background: #f4f1e8; }
+
   @media (max-width: 800px) {
     .split { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
     body { overflow: auto; height: auto; }
@@ -109,6 +117,7 @@
   <h1>Admin</h1>
   <div class="tabs">
     <button id="s-write" aria-pressed="true">Write</button>
+    <button id="s-edit" aria-pressed="false">Edit</button>
     <button id="s-delete" aria-pressed="false">Delete</button>
   </div>
   <div class="seg" data-section="write">
@@ -121,6 +130,11 @@
     <button class="ghost" id="logout">Sign out</button>
     <button class="save" id="save" data-section="write">Save</button>
   </div>
+</div>
+
+<div id="editing" class="editing" hidden>
+  Editing <code id="editing-slug"></code>
+  <button class="ghost" id="editing-cancel">Cancel</button>
 </div>
 
 <div class="split" data-section="write">
@@ -179,6 +193,24 @@
   <div class="pane right">
     <div class="preview-label">Preview</div>
     <div id="preview"></div>
+  </div>
+</div>
+
+<div data-section="edit" hidden>
+  <div class="del-wrap">
+    <h2>Edit an entry</h2>
+    <p class="sub">Pick one to open it in the editor. Saving commits over the existing file; retitling renames it in the same commit.</p>
+
+    <div class="del-tools">
+      <div class="seg">
+        <button id="e-word" aria-pressed="true">Words</button>
+        <button id="e-blog" aria-pressed="false">Blog</button>
+      </div>
+      <input type="search" id="e-filter" placeholder="Filter…" />
+    </div>
+
+    <div class="del-list" id="e-list"></div>
+    <div class="del-log" id="e-log"></div>
   </div>
 </div>
 

@@ -22,6 +22,7 @@ function loadExisting() {
     existing = e;
     render();
     if (!$('[data-section="delete"]').hidden) renderDelList();
+    if (!$('[data-section="edit"]').hidden) renderEditList();
   }).catch(() => {});
 }
 loadExisting();
@@ -186,6 +187,7 @@ function dupeCheck(d) {
 
 /* ---------- draft persistence ---------- */
 function save() {
+  if (editingSlug) return;   // a loaded entry isn't a draft
   try { localStorage.setItem(DRAFT, JSON.stringify({ ...data(), type })); } catch {}
 }
 function restore() {
@@ -204,12 +206,8 @@ form.addEventListener('input', () => { render(); save(); });
 
 $('#clear').onclick = () => {
   if (!confirm('Clear the form? Your saved files are untouched.')) return;
-  form.reset();
-  $('#examples').innerHTML = '';
-  addExample();
-  $('[name=added]').value = new Date().toISOString().slice(0, 10);
-  localStorage.removeItem(DRAFT);
-  render();
+  endEdit();
+  clearForm();
 };
 
 /* ---------- save to disk ---------- */
@@ -217,8 +215,11 @@ async function doSave() {
   const d = data();
   const name = type === 'word' ? d.word : d.title;
   const slug = slugify(name || '');
-  const overwrite = slug && existing[type]?.includes(slug);
+  // Editing already targets a file, so only a *different* existing slug is a clash.
+  const overwrite = slug && slug !== editingSlug && existing[type]?.includes(slug);
   if (overwrite && !confirm(`Overwrite ${slug}.md?`)) return;
+  if (editingSlug && slug !== editingSlug &&
+      !confirm(`Rename ${editingSlug}.md → ${slug}.md?\n\nThe old file is removed in the same commit, and its URL stops working.`)) return;
 
   $('#save').disabled = true;
   status.className = 'status';
@@ -227,20 +228,25 @@ async function doSave() {
     const res = await api('/api/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...d, overwrite: !!overwrite }),
+      body: JSON.stringify({ ...d, overwrite: !!overwrite, renameFrom: editingSlug || '' }),
     });
     if (res.status === 401) { showLogin(); throw new Error('Session expired — sign in again.'); }
     const j = await res.json();
     if (!res.ok) throw new Error(j.error || 'Save failed.');
     status.className = 'status ok';
     status.innerHTML = `Saved <code>${j.file}</code>`;
+    if (editingSlug && editingSlug !== j.slug) {
+      existing[type] = existing[type].filter(s => s !== editingSlug);
+    }
     if (!existing[type].includes(j.slug)) existing[type].push(j.slug);
     localStorage.removeItem(DRAFT);
-    form.reset();
-    $('#examples').innerHTML = '';
-    addExample();
-    $('[name=added]').value = new Date().toISOString().slice(0, 10);
-    render();
+    if (editingSlug) {
+      // Stay on the entry so you can keep working on it.
+      beginEdit(j.slug);
+      render();
+    } else {
+      clearForm();
+    }
     setTimeout(() => { if (status.classList.contains('ok')) status.textContent = ''; }, 6000);
   } catch (e) {
     status.className = 'status err';
@@ -342,13 +348,143 @@ render();
 
 /* ---------- section: write / delete ---------- */
 function setSection(name) {
-  $('#s-write').setAttribute('aria-pressed', String(name === 'write'));
-  $('#s-delete').setAttribute('aria-pressed', String(name === 'delete'));
-  $$('[data-section]').forEach(el => { el.hidden = el.dataset.section !== name; });
+  // Edit shows its picker over the same editor pane Write uses, so the pane
+  // stays visible for both and only the picker toggles.
+  const visible = name === 'edit' ? ['write', 'edit'] : [name];
+  ['write', 'edit', 'delete'].forEach(n =>
+    $(`#s-${n}`).setAttribute('aria-pressed', String(n === name)));
+  $$('[data-section]').forEach(el => { el.hidden = !visible.includes(el.dataset.section); });
+  if (name === 'edit') { loadExisting(); renderEditList(); }
   if (name === 'delete') { loadExisting(); renderDelList(); }
 }
-$('#s-write').onclick = () => setSection('write');
+$('#s-write').onclick = () => { if (editingSlug && !confirmDropEdit()) return; endEdit(); setSection('write'); };
+$('#s-edit').onclick = () => setSection('edit');
 $('#s-delete').onclick = () => setSection('delete');
+
+/* ---------- edit an existing entry ---------- */
+let editType = 'word';
+let editingSlug = null;   // set while an existing file is loaded into the form
+
+const confirmDropEdit = () =>
+  confirm('Leave this edit? Unsaved changes to the entry are discarded.');
+
+function endEdit() {
+  editingSlug = null;
+  $('#editing').hidden = true;
+}
+
+function beginEdit(slug) {
+  editingSlug = slug;
+  $('#editing-slug').textContent = `${slug}.md`;
+  $('#editing').hidden = false;
+}
+$('#editing-cancel').onclick = () => {
+  if (!confirmDropEdit()) return;
+  endEdit();
+  clearForm();
+  setSection('edit');
+};
+
+function renderEditList() {
+  const list = $('#e-list');
+  const q = $('#e-filter').value.trim().toLowerCase();
+  const slugs = (existing[editType] || []).filter(s => !q || s.includes(q)).sort();
+  list.innerHTML = slugs.length
+    ? slugs.map(s => `<button type="button" class="pick-item" data-slug="${s}">${esc(s)}.md</button>`).join('')
+    : `<div class="del-empty">${q ? 'Nothing matches that filter.' : 'Nothing here yet.'}</div>`;
+  $$('#e-list .pick-item').forEach(el => { el.onclick = () => openForEdit(editType, el.dataset.slug); });
+}
+
+function setEditType(t) {
+  editType = t;
+  $('#e-word').setAttribute('aria-pressed', String(t === 'word'));
+  $('#e-blog').setAttribute('aria-pressed', String(t === 'blog'));
+  renderEditList();
+}
+$('#e-word').onclick = () => setEditType('word');
+$('#e-blog').onclick = () => setEditType('blog');
+$('#e-filter').oninput = renderEditList;
+
+// Frontmatter is written by this app, so the subset of YAML it emits is all
+// we need to read back: scalars, [a, b] lists, and "- item" blocks.
+function parseFrontmatter(raw) {
+  const m = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!m) return { fm: {}, body: raw.trim() };
+  const fm = {};
+  const lines = m[1].split('\n');
+  const unq = (v) => {
+    const t = v.trim();
+    if (/^".*"$/.test(t)) { try { return JSON.parse(t); } catch { return t.slice(1, -1); } }
+    return t;
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const kv = lines[i].match(/^([A-Za-z][\w]*):\s*(.*)$/);
+    if (!kv) continue;
+    const [, key, rest] = kv;
+    if (rest.trim() === '') {                       // block list on following lines
+      const items = [];
+      while (i + 1 < lines.length && /^\s+-\s+/.test(lines[i + 1])) {
+        items.push(unq(lines[++i].replace(/^\s+-\s+/, '')));
+      }
+      fm[key] = items;
+    } else if (/^\[.*\]$/.test(rest.trim())) {      // inline list
+      fm[key] = rest.trim().slice(1, -1).split(',').map(x => unq(x)).filter(Boolean);
+    } else {
+      fm[key] = unq(rest);
+    }
+  }
+  return { fm, body: m[2].trim() };
+}
+
+function clearForm() {
+  form.reset();
+  $('#examples').innerHTML = '';
+  addExample();
+  $('[name=added]').value = new Date().toISOString().slice(0, 10);
+  localStorage.removeItem(DRAFT);
+  render();
+}
+
+async function openForEdit(t, slug) {
+  const log = $('#e-log');
+  log.textContent = `Loading ${slug}.md…`;
+  try {
+    const r = await api(`/api/load?type=${encodeURIComponent(t)}&slug=${encodeURIComponent(slug)}`);
+    if (r.status === 401) { showLogin(); throw new Error('Session expired — sign in again.'); }
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Could not load that entry.');
+
+    const { fm, body } = parseFrontmatter(j.raw);
+    setType(t);
+    form.reset();
+    $('#examples').innerHTML = '';
+
+    const set = (name, v) => { const el = form.elements[name]; if (el) el.value = v ?? ''; };
+    if (t === 'word') {
+      set('word', fm.word);
+      set('pronunciation', fm.pronunciation);
+      set('partOfSpeech', fm.partOfSpeech);
+      set('meaning', fm.meaning);
+      set('etymology', fm.etymology);
+      (Array.isArray(fm.examples) && fm.examples.length ? fm.examples : ['']).forEach(addExample);
+    } else {
+      set('title', fm.title);
+      set('blurb', fm.blurb);
+      addExample();
+    }
+    set('tags', Array.isArray(fm.tags) ? fm.tags.join(', ') : (fm.tags || ''));
+    set('added', fm.added || new Date().toISOString().slice(0, 10));
+    set('body', body);
+
+    beginEdit(slug);
+    log.textContent = '';
+    setSection('write');
+    render(); save();
+  } catch (e) {
+    log.textContent = e.message;
+  }
+}
+
 
 /* ---------- delete ---------- */
 let delType = 'word';
@@ -437,6 +573,8 @@ $('#d-go').onclick = async () => {
     ok.forEach(x => {
       selected.delete(delKey(x.type, x.slug));
       existing[x.type] = (existing[x.type] || []).filter(s => s !== x.slug);
+      // The file backing an open edit is gone; saving would silently recreate it.
+      if (editingSlug === x.slug && type === x.type) endEdit();
     });
     const removed = ok.filter(x => !x.missing).length;
     const gone = ok.length - removed;

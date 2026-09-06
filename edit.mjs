@@ -180,12 +180,20 @@ const server = http.createServer(async (req, res) => {
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${slug}.md`);
 
-    // Never silently clobber an existing entry.
-    if (fs.existsSync(file) && !d.overwrite) {
+    const oldSlug = slugify(d.renameFrom || '');
+
+    // Never silently clobber an existing entry — unless it's the one being edited.
+    if (fs.existsSync(file) && !d.overwrite && oldSlug !== slug) {
       return json(409, { error: `“${slug}” already exists.`, slug, exists: true });
     }
 
     fs.writeFileSync(file, buildMarkdown(d));
+
+    // A retitled entry gets a new filename; remove the old one.
+    if (oldSlug && oldSlug !== slug) {
+      const old = path.join(dir, `${oldSlug}.md`);
+      if (fs.existsSync(old)) { fs.unlinkSync(old); console.log(`  renamed  ${oldSlug} → ${slug}`); }
+    }
     const rel = path.relative(ROOT, file);
     console.log(`  saved  ${rel}`);
     return json(200, { ok: true, slug, file: rel, url: `/${d.type === 'word' ? 'words' : 'blog'}/${slug}/` });

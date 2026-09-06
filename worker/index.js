@@ -226,6 +226,21 @@ export default {
       return json(out);
     }
 
+    // Read one entry back so the editor can load it for editing.
+    if (p === '/api/load') {
+      const type = url.searchParams.get('type');
+      const slug = slugify(url.searchParams.get('slug') || '');
+      if (!DIRS[type] || !slug) return json({ error: 'Bad request.' }, 400);
+      const r = await gh(env, `/contents/${encodeURI(`${DIRS[type]}/${slug}.md`)}`);
+      if (r.status === 404) return json({ error: 'Not found.' }, 404);
+      if (!r.ok) return json({ error: `GitHub ${r.status}` }, 502);
+      const { content } = await r.json();
+      // GitHub wraps base64 at 60 columns.
+      const bin = atob(String(content).replace(/\n/g, ''));
+      const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+      return json({ raw: new TextDecoder().decode(bytes) });
+    }
+
     if (p === '/api/upload' && req.method === 'POST') {
       let d;
       try { d = await req.json(); } catch { return json({ error: 'Bad request.' }, 400); }
@@ -256,14 +271,25 @@ export default {
 
       const file = `${DIRS[d.type]}/${slug}.md`;
 
-      if (!d.overwrite) {
+      if (!d.overwrite && slugify(d.renameFrom || '') !== slug) {
         const exists = await gh(env, `/contents/${encodeURI(file)}`);
         if (exists.ok) return json({ error: `“${slug}” already exists.`, slug, exists: true }, 409);
       }
 
+      // Editing a title changes the filename; drop the old file in the same
+      // commit so a rename doesn't leave a stale duplicate behind.
+      const oldSlug = slugify(d.renameFrom || '');
+      const oldFile = oldSlug && oldSlug !== slug ? `${DIRS[d.type]}/${oldSlug}.md` : null;
+
       try {
-        const updated = (await ghExistingPaths(env, [file])).has(file);
-        await ghCommit(env, [{ path: file, content: buildMarkdown(d) }], `${updatedVerb(d)}: ${slug}`);
+        const present = await ghExistingPaths(env, oldFile ? [file, oldFile] : [file]);
+        const updated = present.has(file);
+        const changes = [{ path: file, content: buildMarkdown(d) }];
+        if (oldFile && present.has(oldFile)) changes.push({ path: oldFile, delete: true });
+        const msg = oldFile && present.has(oldFile)
+          ? `rename: ${oldSlug} → ${slug}`
+          : `${updatedVerb(d)}: ${slug}`;
+        await ghCommit(env, changes, msg);
         return json({
           ok: true, slug, file,
           updated,

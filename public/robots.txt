@@ -1,4 +1,4 @@
 User-agent: *
-Disallow: /write
-Disallow: /write.html
+Disallow: /admin
+Disallow: /admin.html
 Allow: /

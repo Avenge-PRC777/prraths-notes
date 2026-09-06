@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Write — prrath.notes</title>
+<title>Admin — prrath.notes</title>
 <meta name="robots" content="noindex, nofollow" />
-<link rel="stylesheet" href="/write.css" />
+<link rel="stylesheet" href="/admin.css" />
 <style>
   body { margin: 0; height: 100vh; overflow: hidden; }
   .bar { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.1rem; border-bottom: 1px solid var(--rule); }
@@ -58,6 +58,31 @@
   .login-card button:disabled { background: var(--rule-2); }
   .login-card .err { font-family: var(--sans); font-size: .78rem; color: #a03318; min-height: 1.1rem; margin: .5rem 0 0; }
   .login-card .hint-line { font-family: var(--sans); font-size: .74rem; color: var(--ink-3); margin: 1.2rem 0 0; }
+  .tabs { display: flex; gap: .3rem; }
+  .tabs button { font-family: var(--sans); font-size: .8rem; font-weight: 600; padding: .35rem .9rem; border: 0; border-radius: 3px; background: none; color: var(--ink-3); cursor: pointer; }
+  .tabs button[aria-pressed="true"] { background: #f2f1ee; color: var(--ink); }
+  [data-section][hidden] { display: none !important; }
+
+  .del-wrap { max-width: 46rem; margin: 0 auto; padding: 1.6rem 1.5rem 5rem; }
+  .del-wrap h2 { font-size: 1.05rem; margin: 0 0 .2rem; }
+  .del-wrap .sub { font-family: var(--sans); font-size: .8rem; color: var(--ink-3); margin: 0 0 1.2rem; }
+  .del-tools { display: flex; align-items: center; gap: .7rem; margin-bottom: .8rem; }
+  .del-tools input[type=search] { flex: 1; font-family: var(--sans); font-size: .85rem; }
+  .del-list { border: 1px solid var(--rule-2); border-radius: 3px; max-height: 60vh; overflow-y: auto; }
+  .del-item { display: flex; align-items: center; gap: .6rem; padding: .45rem .7rem; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: .82rem; cursor: pointer; }
+  .del-item:last-child { border-bottom: 0; }
+  .del-item:hover { background: #faf9f7; }
+  .del-item input { width: auto; margin: 0; }
+  .del-item.on { background: #fdf3f0; }
+  .del-item a { margin-left: auto; font-family: var(--sans); font-size: .72rem; color: var(--ink-3); text-decoration: none; }
+  .del-item a:hover { color: var(--ink); text-decoration: underline; }
+  .del-empty { padding: 1.2rem .7rem; font-family: var(--sans); font-size: .82rem; color: var(--ink-3); }
+  .del-bar { display: flex; align-items: center; gap: .8rem; margin-top: .9rem; }
+  .del-count { font-family: var(--sans); font-size: .8rem; color: var(--ink-3); }
+  button.danger { font-family: var(--sans); font-size: .82rem; font-weight: 600; padding: .45rem 1.1rem; background: #a03318; color: #fff; border: 0; border-radius: 3px; cursor: pointer; }
+  button.danger:disabled { background: var(--rule-2); cursor: default; }
+  .del-log { font-family: var(--sans); font-size: .78rem; color: var(--ink-3); margin-top: .9rem; white-space: pre-wrap; }
+
   @media (max-width: 800px) {
     .split { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
     body { overflow: auto; height: auto; }
@@ -81,20 +106,24 @@
 </div>
 
 <div class="bar">
-  <h1>Writing desk</h1>
-  <div class="seg">
+  <h1>Admin</h1>
+  <div class="tabs">
+    <button id="s-write" aria-pressed="true">Write</button>
+    <button id="s-delete" aria-pressed="false">Delete</button>
+  </div>
+  <div class="seg" data-section="write">
     <button id="t-word" aria-pressed="true">Word</button>
     <button id="t-blog" aria-pressed="false">Blog</button>
   </div>
   <div class="right">
     <span class="status" id="status"></span>
-    <button class="ghost" id="clear">Clear</button>
+    <button class="ghost" id="clear" data-section="write">Clear</button>
     <button class="ghost" id="logout">Sign out</button>
-    <button class="save" id="save">Save</button>
+    <button class="save" id="save" data-section="write">Save</button>
   </div>
 </div>
 
-<div class="split">
+<div class="split" data-section="write">
   <div class="pane left">
     <form id="form" autocomplete="off">
       <!-- word fields -->
@@ -150,6 +179,31 @@
   <div class="pane right">
     <div class="preview-label">Preview</div>
     <div id="preview"></div>
+  </div>
+</div>
+
+<div data-section="delete" hidden>
+  <div class="del-wrap">
+    <h2>Delete entries</h2>
+    <p class="sub">Pick one or many. Each deletion is a commit to the repo — there is no undo here, only <code>git revert</code>.</p>
+
+    <div class="del-tools">
+      <div class="seg">
+        <button id="d-word" aria-pressed="true">Words</button>
+        <button id="d-blog" aria-pressed="false">Blog</button>
+      </div>
+      <input type="search" id="d-filter" placeholder="Filter…" />
+      <button class="ghost" id="d-all">Select all</button>
+      <button class="ghost" id="d-none">Clear</button>
+    </div>
+
+    <div class="del-list" id="d-list"></div>
+
+    <div class="del-bar">
+      <span class="del-count" id="d-count">Nothing selected</span>
+      <button class="danger" id="d-go" disabled>Delete selected</button>
+    </div>
+    <div class="del-log" id="d-log"></div>
   </div>
 </div>
 

@@ -1,6 +1,6 @@
 /**
- * Serves the static site, plus a private /write editor that commits
- * Markdown straight to GitHub.
+ * Serves the static site, plus a private /admin desk that commits
+ * Markdown straight to GitHub (write) and removes it again (delete).
  *
  * Secrets (set in Cloudflare, never in the repo):
  *   ADMIN_PASSWORD_HASH  sha256 hex of the passphrase
@@ -10,6 +10,7 @@
  */
 
 const COOKIE = 'wd_session';
+const DIRS = { word: 'src/content/words', blog: 'src/content/blog' };
 const SESSION_DAYS = 30;
 const enc = new TextEncoder();
 
@@ -81,6 +82,23 @@ async function ghPut(env, filePath, contentB64, message) {
     throw new Error(`GitHub ${res.status}: ${t.slice(0, 200)}`);
   }
   return { updated: !!sha };
+}
+
+async function ghDelete(env, filePath, message) {
+  const head = await gh(env, `/contents/${encodeURI(filePath)}`);
+  if (head.status === 404) return { missing: true };
+  if (!head.ok) throw new Error(`GitHub ${head.status}`);
+  const { sha } = await head.json();
+
+  const res = await gh(env, `/contents/${encodeURI(filePath)}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ message, sha }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`GitHub ${res.status}: ${t.slice(0, 200)}`);
+  }
+  return { deleted: true };
 }
 
 const b64 = (str) => {
@@ -169,7 +187,7 @@ export default {
 
     if (p === '/api/existing') {
       const out = { word: [], blog: [] };
-      for (const [t, dir] of [['word', 'src/content/words'], ['blog', 'src/content/blog']]) {
+      for (const [t, dir] of Object.entries(DIRS)) {
         const r = await gh(env, `/contents/${dir}`);
         if (r.ok) {
           const list = await r.json();
@@ -207,8 +225,7 @@ export default {
       const slug = slugify(d.type === 'word' ? d.word : d.title);
       if (!slug) return json({ error: 'Could not make a filename from that title.' }, 400);
 
-      const dir = d.type === 'word' ? 'src/content/words' : 'src/content/blog';
-      const file = `${dir}/${slug}.md`;
+      const file = `${DIRS[d.type]}/${slug}.md`;
 
       if (!d.overwrite) {
         const exists = await gh(env, `/contents/${encodeURI(file)}`);
@@ -225,6 +242,33 @@ export default {
       } catch (e) {
         return json({ error: e.message }, 502);
       }
+    }
+
+    if (p === '/api/delete' && req.method === 'POST') {
+      let d;
+      try { d = await req.json(); } catch { return json({ error: 'Bad request.' }, 400); }
+      const items = Array.isArray(d.items) ? d.items : [];
+      if (!items.length) return json({ error: 'Nothing selected.' }, 400);
+      if (items.length > 50) return json({ error: 'Too many at once (max 50).' }, 400);
+
+      const results = [];
+      // Sequential: GitHub rejects concurrent writes to the same branch.
+      for (const it of items) {
+        const type = it.type;
+        const slug = slugify(it.slug);
+        if (!DIRS[type] || !slug) {
+          results.push({ ...it, ok: false, error: 'Bad item.' });
+          continue;
+        }
+        const file = `${DIRS[type]}/${slug}.md`;
+        try {
+          const r = await ghDelete(env, file, `remove: ${slug}`);
+          results.push({ type, slug, file, ok: true, missing: !!r.missing });
+        } catch (e) {
+          results.push({ type, slug, file, ok: false, error: e.message });
+        }
+      }
+      return json({ ok: results.every((r) => r.ok), results });
     }
 
     return json({ error: 'Not found.' }, 404);

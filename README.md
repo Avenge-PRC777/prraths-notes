@@ -6,7 +6,7 @@ Public to read, private to edit (only you can push).
 ## Daily use
 
 ```bash
-npm run write    # → localhost:4444, the writing desk
+npm run admin    # → localhost:4444, the admin desk (write + delete)
 ```
 
 Split screen: fields and a markdown box on the left, the finished entry

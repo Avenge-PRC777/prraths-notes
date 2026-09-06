@@ -6,4 +6,4 @@ package-lock.json
 .npmrc
 .dev.vars
 .wrangler/
-public/write.css
+public/admin.css

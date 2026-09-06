@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "astro dev",
-    "build": "cp src/styles/global.css public/write.css && astro build",
+    "build": "cp src/styles/global.css public/admin.css && astro build",
     "preview": "astro preview",
     "new": "node new.mjs",
-    "write": "node edit.mjs"
+    "admin": "node edit.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.4",

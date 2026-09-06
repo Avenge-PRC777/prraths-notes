@@ -17,7 +17,12 @@ const api = (path, opts = {}) =>
   fetch(path, { credentials: 'same-origin', ...opts });
 
 function loadExisting() {
-  api('/api/existing').then(r => r.ok ? r.json() : null).then(e => { if (e) { existing = e; render(); } }).catch(() => {});
+  api('/api/existing').then(r => r.ok ? r.json() : null).then(e => {
+    if (!e) return;
+    existing = e;
+    render();
+    if (!$('[data-section="delete"]').hidden) renderDelList();
+  }).catch(() => {});
 }
 loadExisting();
 
@@ -335,6 +340,116 @@ window.__loadExisting = loadExisting;
 restore();
 render();
 
+/* ---------- section: write / delete ---------- */
+function setSection(name) {
+  $('#s-write').setAttribute('aria-pressed', String(name === 'write'));
+  $('#s-delete').setAttribute('aria-pressed', String(name === 'delete'));
+  $$('[data-section]').forEach(el => { el.hidden = el.dataset.section !== name; });
+  if (name === 'delete') { loadExisting(); renderDelList(); }
+}
+$('#s-write').onclick = () => setSection('write');
+$('#s-delete').onclick = () => setSection('delete');
+
+/* ---------- delete ---------- */
+let delType = 'word';
+const selected = new Set();   // "type/slug", so a switch of tab keeps picks
+
+const delKey = (t, s) => `${t}/${s}`;
+
+function renderDelList() {
+  const list = $('#d-list');
+  const q = $('#d-filter').value.trim().toLowerCase();
+  const slugs = (existing[delType] || []).filter(s => !q || s.includes(q)).sort();
+
+  if (!slugs.length) {
+    list.innerHTML = `<div class="del-empty">${q ? 'Nothing matches that filter.' : 'Nothing here yet.'}</div>`;
+  } else {
+    list.innerHTML = slugs.map(s => {
+      const k = delKey(delType, s);
+      const on = selected.has(k);
+      const href = `/${delType === 'word' ? 'words' : 'blog'}/${s}/`;
+      return `<label class="del-item${on ? ' on' : ''}" data-slug="${s}">
+        <input type="checkbox" ${on ? 'checked' : ''} />
+        <span>${esc(s)}.md</span>
+        <a href="${href}" target="_blank" rel="noopener">view ↗</a>
+      </label>`;
+    }).join('');
+    $$('#d-list .del-item').forEach(el => {
+      el.querySelector('input').onchange = (e) => {
+        const k = delKey(delType, el.dataset.slug);
+        e.target.checked ? selected.add(k) : selected.delete(k);
+        el.classList.toggle('on', e.target.checked);
+        updateDelCount();
+      };
+      // the "view" link shouldn't toggle the row it sits in
+      el.querySelector('a').onclick = (e) => e.stopPropagation();
+    });
+  }
+  updateDelCount();
+}
+
+function updateDelCount() {
+  const n = selected.size;
+  $('#d-count').textContent = n ? `${n} selected` : 'Nothing selected';
+  $('#d-go').disabled = !n;
+}
+
+function setDelType(t) {
+  delType = t;
+  $('#d-word').setAttribute('aria-pressed', String(t === 'word'));
+  $('#d-blog').setAttribute('aria-pressed', String(t === 'blog'));
+  renderDelList();
+}
+$('#d-word').onclick = () => setDelType('word');
+$('#d-blog').onclick = () => setDelType('blog');
+$('#d-filter').oninput = renderDelList;
+
+$('#d-all').onclick = () => {
+  const q = $('#d-filter').value.trim().toLowerCase();
+  (existing[delType] || []).filter(s => !q || s.includes(q)).forEach(s => selected.add(delKey(delType, s)));
+  renderDelList();
+};
+$('#d-none').onclick = () => { selected.clear(); renderDelList(); };
+
+$('#d-go').onclick = async () => {
+  const items = [...selected].map(k => {
+    const i = k.indexOf('/');
+    return { type: k.slice(0, i), slug: k.slice(i + 1) };
+  });
+  const names = items.map(i => `${i.slug}.md`).join('\n  ');
+  if (!confirm(`Delete ${items.length} file${items.length > 1 ? 's' : ''}?\n\n  ${names}\n\nThis cannot be undone from here.`)) return;
+
+  $('#d-go').disabled = true;
+  const log = $('#d-log');
+  log.textContent = 'Deleting…';
+  try {
+    const r = await api('/api/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    if (r.status === 401) { showLogin(); throw new Error('Session expired — sign in again.'); }
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Delete failed.');
+
+    const ok = (j.results || []).filter(x => x.ok);
+    const bad = (j.results || []).filter(x => !x.ok);
+    ok.forEach(x => {
+      selected.delete(delKey(x.type, x.slug));
+      existing[x.type] = (existing[x.type] || []).filter(s => s !== x.slug);
+    });
+    log.textContent =
+      `Deleted ${ok.length} file${ok.length === 1 ? '' : 's'}.` +
+      (bad.length ? `\nFailed: ${bad.map(x => `${x.slug} (${x.error})`).join(', ')}` : '') +
+      `\nThe live site updates once the rebuild finishes.`;
+    renderDelList();
+  } catch (e) {
+    log.textContent = e.message;
+  } finally {
+    updateDelCount();
+  }
+};
+
 /* ---------- online: sign in / sign out ---------- */
 if (ONLINE) {
   const overlay = document.getElementById('login');
@@ -371,8 +486,8 @@ if (ONLINE) {
     }
   });
 
-  document.getElementById('logout').onclick = async () => {
+  document.getElementById('logout')?.addEventListener('click', async () => {
     await api('/api/logout', { method: 'POST' }).catch(() => {});
     location.reload();
-  };
+  });
 }

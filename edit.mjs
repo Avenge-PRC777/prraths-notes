@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Local writing desk. Serves a split-screen markdown editor and writes .md files
-// straight into src/content. No dependencies, no auth — localhost only.
+// Local admin desk. Serves the split-screen markdown editor (write) and an
+// entry list (delete), acting on .md files in src/content. localhost only.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -73,8 +73,13 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' }).end(data);
   const json = (code, o) => send(code, 'application/json', JSON.stringify(o));
 
-  if (url.pathname === '/' || url.pathname === '/index.html') {
-    return send(200, 'text/html; charset=utf-8', fs.readFileSync(path.join(ROOT, 'editor/index.html')));
+  if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/admin') {
+    // Same page as production, switched to local mode so it skips the login overlay.
+    const html = fs.readFileSync(path.join(ROOT, 'public/admin.html'), 'utf8')
+      .replace('data-mode="online"', 'data-mode="local"')
+      .replace('href="/admin.css"', 'href="/site.css"')
+      .replace('<button class="ghost" id="logout">Sign out</button>', '');
+    return send(200, 'text/html; charset=utf-8', html);
   }
   if (url.pathname === '/editor.js' || url.pathname === '/app.js') {
     return send(200, 'text/javascript; charset=utf-8', fs.readFileSync(path.join(ROOT, 'public/editor.js')));
@@ -138,6 +143,29 @@ const server = http.createServer(async (req, res) => {
     return json(200, { ok: true, url: `/images/${file}`, file: `public/images/${file}` });
   }
 
+  if (url.pathname === '/api/delete' && req.method === 'POST') {
+    let d;
+    try { d = JSON.parse(await body(req)); } catch { return json(400, { error: 'Bad JSON.' }); }
+    const items = Array.isArray(d.items) ? d.items : [];
+    if (!items.length) return json(400, { error: 'Nothing selected.' });
+
+    const results = items.map((it) => {
+      const slug = slugify(it.slug || '');
+      if (!DIRS[it.type] || !slug) return { ...it, ok: false, error: 'Bad item.' };
+      const file = path.join(ROOT, DIRS[it.type], `${slug}.md`);
+      const rel = path.relative(ROOT, file);
+      if (!fs.existsSync(file)) return { type: it.type, slug, file: rel, ok: true, missing: true };
+      try {
+        fs.unlinkSync(file);
+        console.log(`  deleted  ${rel}`);
+        return { type: it.type, slug, file: rel, ok: true };
+      } catch (e) {
+        return { type: it.type, slug, file: rel, ok: false, error: e.message };
+      }
+    });
+    return json(200, { ok: results.every((r) => r.ok), results });
+  }
+
   if (url.pathname === '/api/save' && req.method === 'POST') {
     let d;
     try { d = JSON.parse(await body(req)); } catch { return json(400, { error: 'Bad JSON.' }); }
@@ -167,6 +195,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`\n  Writing desk → http://localhost:${PORT}`);
+  console.log(`\n  Admin desk → http://localhost:${PORT}`);
   console.log(`  Files land in src/content/. Run "npm run dev" too for the live site.\n`);
 });

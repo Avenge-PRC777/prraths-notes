@@ -7,15 +7,6 @@
 <meta name="robots" content="noindex, nofollow" />
 <link rel="stylesheet" href="/admin.css" />
 <style>
-  /* The public site's palette is warm on purpose; the desk is a tool, so it
-     overrides those tokens to neutral grey and leaves the site untouched. */
-  :root {
-    --bg-soft: #f7f7f7;
-    --ink-2:   #525252;
-    --ink-3:   #808080;
-    --rule:    #e2e2e2;
-    --rule-2:  #c6c6c6;
-  }
   body { margin: 0; height: 100vh; overflow: hidden; background: #fff; }
   .bar { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.1rem; border-bottom: 1px solid var(--rule); }
   .bar h1 { font-size: 1rem; margin: 0; font-weight: 600; }
@@ -57,7 +48,7 @@
   #preview img { max-width: 100%; height: auto; display: block; margin: 1rem 0; border: 1px solid var(--rule); }
   /* an image not yet published shows its path instead of a broken icon */
   #preview img:not([src]), #preview img[src=""] { display: none; }
-  .warn { font-family: var(--sans); font-size: .76rem; color: #8a5a00; background: #fdf6e3; border: 1px solid #e8d9a8; border-radius: 3px; padding: .5rem .7rem; margin-top: .8rem; }
+  .warn { font-family: var(--sans); font-size: .76rem; color: var(--ink-2); background: #f7f7f7; border: 1px solid #d8d8d8; border-left: 3px solid var(--ink-3); border-radius: 3px; padding: .5rem .7rem; margin-top: .8rem; }
   .login-overlay[hidden] { display: none !important; }
   .login-overlay { position: fixed; inset: 0; background: #fff; z-index: 100; display: grid; place-items: center; padding: 1.5rem; }
   .login-card { width: 100%; max-width: 20rem; }
@@ -83,7 +74,7 @@
   .del-item:last-child { border-bottom: 0; }
   .del-item:hover { background: #f7f7f7; }
   .del-item input { width: auto; margin: 0; }
-  .del-item.on { background: #fbf0ed; }
+  .del-item.on { background: #f0f0f0; box-shadow: inset 3px 0 0 #a03318; }
   .del-item a { margin-left: auto; font-family: var(--sans); font-size: .72rem; color: var(--ink-3); text-decoration: none; }
   .del-item a:hover { color: var(--ink); text-decoration: underline; }
   .del-empty { padding: 1.2rem .7rem; font-family: var(--sans); font-size: .82rem; color: var(--ink-3); }

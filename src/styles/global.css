@@ -2,12 +2,12 @@
 
 :root {
   --bg:       #ffffff;
-  --bg-soft:  #f7f7f5;
+  --bg-soft:  #f7f7f7;
   --ink:      #1a1a1a;
-  --ink-2:    #555050;
-  --ink-3:    #857f79;
-  --rule:     #e0ddd8;
-  --rule-2:   #c9c5be;
+  --ink-2:    #525252;
+  --ink-3:    #808080;
+  --rule:     #e2e2e2;
+  --rule-2:   #c6c6c6;
   --link:     #14507d;
   --link-hov: #a03318;
   --mark:     #fbeaa6;

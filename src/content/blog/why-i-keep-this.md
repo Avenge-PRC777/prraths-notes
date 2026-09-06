@@ -17,7 +17,7 @@ The note wasn't the problem. Three things were:
 
 **No sentence.** Definitions don't survive. Sentences do. I remember *liminal* because of an empty airport at 3 a.m., not because of "relating to a threshold."
 
-**No reason to return.** A note you never reopen is a note you never review, and reviewing is the whole mechanism — see [[spaced-repetition]].
+**No reason to return.** A note you never reopen is a note you never review, and reviewing is the whole mechanism. Recalling something just as it starts to fade is what makes it stick; re-reading it is not.
 
 ## What this is instead
 

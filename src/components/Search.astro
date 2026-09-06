@@ -8,13 +8,12 @@ const { autofocus = false } = Astro.props;
     </svg>
   </span>
   <input id="q" type="search" autocomplete="off" spellcheck="false"
-         placeholder="Search words, concepts, writing…" data-autofocus={autofocus ? 'true' : undefined} />
+         placeholder="Search words and writing…" data-autofocus={autofocus ? 'true' : undefined} />
   <span class="kbd">/</span>
 </div>
 <div class="filters">
   <button class="filter" data-f="all" aria-pressed="true">Everything</button>
   <button class="filter" data-f="word" aria-pressed="false">Words</button>
-  <button class="filter" data-f="concept" aria-pressed="false">Concepts</button>
   <button class="filter" data-f="blog" aria-pressed="false">Blog</button>
 </div>
 <div class="results" id="results"></div>

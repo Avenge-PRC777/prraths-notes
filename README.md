@@ -1,6 +1,6 @@
 # prrath.notes
 
-Words, concepts and writing — one place, one search box.
+Words and writing — one place, one search box.
 Public to read, private to edit (only you can push).
 
 ## Daily use
@@ -8,7 +8,6 @@ Public to read, private to edit (only you can push).
 ```bash
 npm run dev      # → localhost:4321, live reload
 npm run new word "petrichor"        # asks meaning, example, tags
-npm run new concept "Survivorship bias"
 npm run new blog "Why I keep this"
 ```
 
@@ -49,12 +48,11 @@ Netlify and Vercel work identically with the same build command and output dir.
 
 ```
 src/content/words/*.md      one file per word
-src/content/concepts/*.md   one file per concept
 src/content/blog/*.md       one file per post
 src/content.config.ts       the required fields for each
 ```
 
-**Search** — `/search-index.json` is generated at build time from all three collections
+**Search** — `/search-index.json` is generated at build time from both collections
 (titles, meanings, examples, tags, body text). The browser fetches it once on first
 keystroke and filters in memory, so results appear instantly with no server.
 Ranking: exact title > title prefix > title contains > tag > summary > body.

@@ -19,7 +19,11 @@ The difference is whether the reader can now reason about a case you didn't ment
 
 ## The bomber plane test
 
-The best short explanation I know is the WWII bomber story in [[survivorship-bias]]. It's four sentences and it does something remarkable: after hearing it, you can spot the bias in situations that have nothing to do with planes.
+The best short explanation I know is four sentences long. In WWII, the US military mapped the bullet holes on bombers that came back and planned to armour those spots. Abraham Wald pointed out they were only looking at the planes that *returned* — holes in the wings were survivable. The places with no holes on returning planes were exactly where a hit meant you never came back.
+
+Armour the parts with no holes.
+
+It does something remarkable: after hearing it, you can spot the same bias in situations that have nothing to do with planes.
 
 That's compression. It didn't skip the hard part — the hard part *is* the story. It found the version of the hard part that fits in a person's head.
 
@@ -31,4 +35,4 @@ The reason simple explanations are rare isn't that people are bad writers. It's 
 
 Jargon and completeness are excellent camouflage. Four clear sentences are not. That's why writing the short version is a good way to find out whether you actually understood something, and an uncomfortable one.
 
-It's also why every concept on this site starts with one sentence in the summary line. If I can't write that line, the page isn't ready.
+It's also why every entry on this site starts with one line saying what the thing is. If I can't write that line, the page isn't ready.

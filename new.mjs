@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // Add an entry without touching frontmatter by hand:
 //   npm run new word "petrichor"
-//   npm run new concept "Survivorship bias"
 //   npm run new blog "Why I keep this"
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,13 +9,13 @@ import readline from 'node:readline/promises';
 const [type, ...rest] = process.argv.slice(2);
 const title = rest.join(' ').trim();
 
-if (!['word', 'concept', 'blog'].includes(type) || !title) {
-  console.log('Usage: npm run new <word|concept|blog> "<title>"');
+if (!['word', 'blog'].includes(type) || !title) {
+  console.log('Usage: npm run new <word|blog> "<title>"');
   process.exit(1);
 }
 
 const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const dir = { word: 'words', concept: 'concepts', blog: 'blog' }[type];
+const dir = { word: 'words', blog: 'blog' }[type];
 const file = path.join('src/content', dir, `${slug}.md`);
 
 if (fs.existsSync(file)) {
@@ -56,21 +55,6 @@ examples:
 tags: [${tags.split(',').map(t => t.trim()).filter(Boolean).join(', ')}]
 added: ${today}
 ---
-`;
-} else if (type === 'concept') {
-  const summary = await ask('One-line summary');
-  const field = await ask('Field', 'thinking');
-  const tags = await ask('Tags, comma separated', field);
-  body = `---
-title: ${JSON.stringify(title)}
-summary: ${JSON.stringify(summary)}
-field: ${field}
-tags: [${tags.split(',').map(t => t.trim()).filter(Boolean).join(', ')}]
-added: ${today}
----
-
-## The plain version
-
 `;
 } else {
   const blurb = await ask('Blurb');

@@ -1,9 +1,9 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-const [w, c, b] = await Promise.all([getCollection('words'), getCollection('concepts'), getCollection('blog')]);
+const [w, b] = await Promise.all([getCollection('words'), getCollection('blog')]);
 const counts = {};
-for (const e of [...w, ...c, ...b]) for (const t of e.data.tags) counts[t] = (counts[t] || 0) + 1;
+for (const e of [...w, ...b]) for (const t of e.data.tags) counts[t] = (counts[t] || 0) + 1;
 const tags = Object.entries(counts).sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 ---
 <Base title="Tags — prrath.notes">

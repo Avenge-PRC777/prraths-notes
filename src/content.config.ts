@@ -15,17 +15,6 @@ const words = defineCollection({
   }),
 });
 
-const concepts = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/concepts' }),
-  schema: z.object({
-    title: z.string(),
-    summary: z.string(),
-    field: z.string().optional(),
-    tags: z.array(z.string()).default([]),
-    added: z.coerce.date(),
-  }),
-});
-
 const blog = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/blog' }),
   schema: z.object({
@@ -36,4 +25,4 @@ const blog = defineCollection({
   }),
 });
 
-export const collections = { words, concepts, blog };
+export const collections = { words, blog };

@@ -4,17 +4,15 @@ import Search from '../components/Search.astro';
 import { getCollection } from 'astro:content';
 
 const words = (await getCollection('words')).sort((a,b) => b.data.added - a.data.added);
-const concepts = (await getCollection('concepts')).sort((a,b) => b.data.added - a.data.added);
 const blog = (await getCollection('blog')).sort((a,b) => b.data.added - a.data.added);
 const fmt = (d) => d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 ---
-<Base title="prrath.notes — words, concepts, writing">
+<Base title="prrath.notes — words and writing">
   <div class="wrap">
     <div class="hero">
       <h1>A place where I dump some stuff</h1>
       <div class="stats">
         <div class="stat"><b>{words.length}</b><span>Words</span></div>
-        <div class="stat"><b>{concepts.length}</b><span>Concepts</span></div>
         <div class="stat"><b>{blog.length}</b><span>Posts</span></div>
       </div>
     </div>
@@ -34,17 +32,6 @@ const fmt = (d) => d.toLocaleDateString('en-US', { month:'short', day:'numeric',
         </li>
       ))}
     </ul>
-
-    <div class="section-head"><h2>Concepts</h2><a href="/concepts">All concepts →</a></div>
-    <div class="grid">
-      {concepts.slice(0,4).map(e => (
-        <a class="card" href={`/concepts/${e.id}/`}>
-          <span class="badge badge-concept">{e.data.field || 'concept'}</span>
-          <h3>{e.data.title}</h3>
-          <p>{e.data.summary}</p>
-        </a>
-      ))}
-    </div>
 
     <div class="section-head"><h2>Writing</h2><a href="/blog">All posts →</a></div>
     <ul class="entry-list">

@@ -11,4 +11,4 @@ tags: [noun, mind, thinking]
 added: 2026-09-04
 ---
 
-The flip side of a genuinely useful instinct — pattern-matching is why we survived. Apophenia is that instrument with the gain turned too high. See [[survivorship-bias]].
+The flip side of a genuinely useful instinct — pattern-matching is why we survived. Apophenia is that instrument with the gain turned too high.

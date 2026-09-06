@@ -3,10 +3,9 @@ import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
-  const [w, c, b] = await Promise.all([getCollection('words'), getCollection('concepts'), getCollection('blog')]);
+  const [w, b] = await Promise.all([getCollection('words'), getCollection('blog')]);
   const all = [
     ...w.map(e => ({ t:'word', url:`/words/${e.id}/`, title:e.data.word, sub:e.data.meaning, tags:e.data.tags })),
-    ...c.map(e => ({ t:'concept', url:`/concepts/${e.id}/`, title:e.data.title, sub:e.data.summary, tags:e.data.tags })),
     ...b.map(e => ({ t:'blog', url:`/blog/${e.id}/`, title:e.data.title, sub:e.data.blurb, tags:e.data.tags })),
   ];
   const tags = [...new Set(all.flatMap(i => i.tags))];

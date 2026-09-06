@@ -9,6 +9,10 @@ const ONLINE = document.body.dataset.mode === 'online';
 let type = 'word';
 let existing = { word: [], blog: [] };
 
+// Images just uploaded aren't on the deployed site yet; show the local copy
+// in the preview until the rebuild catches up.
+const localImages = new Map();
+
 const api = (path, opts = {}) =>
   fetch(path, { credentials: 'same-origin', ...opts });
 
@@ -26,7 +30,8 @@ function inline(s) {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) =>
+      `<img src="${localImages.get(src) || src}" alt="${alt}" data-path="${src}" />`)
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 }
 
@@ -286,6 +291,7 @@ async function uploadImage(file, suggestedName) {
     if (r.status === 401) { showLogin(); throw new Error('Session expired — sign in again.'); }
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'Upload failed.');
+    localImages.set(j.url, URL.createObjectURL(file));
     bodyEl.value = bodyEl.value.replace(placeholder, `\n![${name}](${j.url})\n`);
     status.className = 'status ok';
     status.innerHTML = `Added <code>${j.file}</code>`;

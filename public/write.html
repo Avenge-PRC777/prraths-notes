@@ -45,6 +45,8 @@
   .hintline { font-family: var(--sans); font-size: .72rem; color: var(--ink-3); margin-top: .25rem; }
   .preview-label { font-family: var(--sans); font-size: .68rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3); margin-bottom: 1rem; }
   #preview img { max-width: 100%; height: auto; display: block; margin: 1rem 0; border: 1px solid var(--rule); }
+  /* an image not yet published shows its path instead of a broken icon */
+  #preview img:not([src]), #preview img[src=""] { display: none; }
   .warn { font-family: var(--sans); font-size: .76rem; color: #8a5a00; background: #fdf6e3; border: 1px solid #e8d9a8; border-radius: 3px; padding: .5rem .7rem; margin-top: .8rem; }
   .login-overlay[hidden] { display: none !important; }
   .login-overlay { position: fixed; inset: 0; background: #fff; z-index: 100; display: grid; place-items: center; padding: 1.5rem; }

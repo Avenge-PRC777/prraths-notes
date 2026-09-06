@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "new": "node new.mjs"
+    "new": "node new.mjs",
+    "write": "node edit.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.4",

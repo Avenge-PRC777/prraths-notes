@@ -347,18 +347,31 @@ restore();
 render();
 
 /* ---------- section: write / delete ---------- */
-function setSection(name) {
-  // Edit shows its picker over the same editor pane Write uses, so the pane
-  // stays visible for both and only the picker toggles.
-  const visible = name === 'edit' ? ['write', 'edit'] : [name];
+// Exactly one pane is visible. Picking an entry to edit shows the "write"
+// pane (the editor) while the Edit tab stays lit, so the tab reflects what
+// you're doing rather than which pane happens to be on screen.
+function setSection(pane, tab = pane) {
   ['write', 'edit', 'delete'].forEach(n =>
-    $(`#s-${n}`).setAttribute('aria-pressed', String(n === name)));
-  $$('[data-section]').forEach(el => { el.hidden = !visible.includes(el.dataset.section); });
-  if (name === 'edit') { loadExisting(); renderEditList(); }
-  if (name === 'delete') { loadExisting(); renderDelList(); }
+    $(`#s-${n}`).setAttribute('aria-pressed', String(n === tab)));
+  $$('[data-section]').forEach(el => { el.hidden = el.dataset.section !== pane; });
+  $('#editing').hidden = !editingSlug || pane !== 'write';
+  if (pane === 'edit') { loadExisting(); renderEditList(); }
+  if (pane === 'delete') { loadExisting(); renderDelList(); }
 }
-$('#s-write').onclick = () => { if (editingSlug && !confirmDropEdit()) return; endEdit(); setSection('write'); };
-$('#s-edit').onclick = () => setSection('edit');
+$('#s-write').onclick = () => {
+  if (editingSlug) {
+    if (!confirmDropEdit()) return;
+    endEdit();
+    clearForm();
+  }
+  setSection('write');
+};
+$('#s-edit').onclick = () => {
+  if (editingSlug && !confirmDropEdit()) return;
+  endEdit();
+  clearForm();
+  setSection('edit');
+};
 $('#s-delete').onclick = () => setSection('delete');
 
 /* ---------- edit an existing entry ---------- */
@@ -376,7 +389,6 @@ function endEdit() {
 function beginEdit(slug) {
   editingSlug = slug;
   $('#editing-slug').textContent = `${slug}.md`;
-  $('#editing').hidden = false;
 }
 $('#editing-cancel').onclick = () => {
   if (!confirmDropEdit()) return;
@@ -384,6 +396,7 @@ $('#editing-cancel').onclick = () => {
   clearForm();
   setSection('edit');
 };
+
 
 function renderEditList() {
   const list = $('#e-list');
@@ -478,7 +491,7 @@ async function openForEdit(t, slug) {
 
     beginEdit(slug);
     log.textContent = '';
-    setSection('write');
+    setSection('write', 'edit');
     render(); save();
   } catch (e) {
     log.textContent = e.message;

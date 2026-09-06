@@ -10,6 +10,8 @@
   body { margin: 0; height: 100vh; overflow: hidden; background: #fff; }
   .bar { display: flex; align-items: center; gap: 1rem; padding: .7rem 1.1rem; border-bottom: 1px solid var(--rule); }
   .bar h1 { font-size: 1rem; margin: 0; font-weight: 600; }
+  .home { font-family: var(--sans); font-size: .78rem; color: var(--ink-3); text-decoration: none; white-space: nowrap; }
+  .home:hover { color: var(--link-hov); }
   .seg { display: flex; gap: 0; border: 1px solid var(--rule-2); border-radius: 3px; overflow: hidden; }
   .seg button { font-family: var(--sans); font-size: .78rem; padding: .3rem .8rem; border: 0; background: #fff; color: var(--ink-2); cursor: pointer; }
   .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
@@ -115,6 +117,7 @@
 </div>
 
 <div class="bar">
+  <a class="home" href="/" title="Back to the site">← prrath.notes</a>
   <h1>Admin</h1>
   <div class="tabs">
     <button id="s-write" aria-pressed="true">Write</button>

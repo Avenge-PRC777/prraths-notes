@@ -10,7 +10,7 @@ const links = await backlinksFor(id);
       {links.map(l => (
         <li>
           <span class={`badge badge-${l.type}`}>{l.type}</span>
-          <a href={l.url} style="margin-left:.4rem">{l.title}</a>
+          <a href={l.url}>{l.title}</a>
         </li>
       ))}
     </ul>

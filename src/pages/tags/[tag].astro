@@ -17,7 +17,7 @@ const { tag, items } = Astro.props;
   <div class="wrap">
     <a class="backlink" href="/tags">← All tags</a>
     <h1>#{tag}</h1>
-    <p style="color:var(--ink-2)">{items.length} {items.length === 1 ? 'entry' : 'entries'}</p>
+    <p>{items.length} {items.length === 1 ? 'entry' : 'entries'}</p>
     <ul class="entry-list">
       {items.map(i => (
         <li class="entry">

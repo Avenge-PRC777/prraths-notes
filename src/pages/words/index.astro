@@ -11,16 +11,16 @@ const letters = Object.keys(groups).sort();
 ---
 <Base title="Words — prrath.notes">
   <div class="wrap">
-    <div style="padding-top:2rem">
+    <div>
       <h1>Words</h1>
-      <p style="color:var(--ink-2);margin:.3rem 0 0">{words.length} collected. Each one with what it means and a sentence that made it stick.</p>
-      <div class="tags" style="margin-top:1rem">
+      <p>{words.length} collected. Each one with what it means and a sentence that made it stick.</p>
+      <div class="tags">
         {letters.map(l => <a class="tag" href={`#${l}`}>{l}</a>)}
       </div>
     </div>
     {letters.map(l => (
       <section>
-        <h2 id={l} style="border-bottom:1px solid var(--rule);padding-bottom:.3rem">{l}</h2>
+        <h2 id={l}>{l}</h2>
         <ul class="entry-list">
           {groups[l].map(e => (
             <li class="entry">

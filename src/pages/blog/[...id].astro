@@ -16,7 +16,7 @@ const fmt = (x) => x.toLocaleDateString('en-US', { month:'long', day:'numeric', 
     <a class="backlink" href="/blog">← Writing</a>
     <div class="word-head">
       <span class="badge badge-blog">blog</span>
-      <h1 style="margin:.5rem 0 .3rem">{d.title}</h1>
+      <h1>{d.title}</h1>
       <span class="date">{fmt(d.added)}</span>
       <p class="meaning">{d.blurb}</p>
     </div>

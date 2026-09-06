@@ -8,11 +8,11 @@ const tags = Object.entries(counts).sort((a,b) => b[1] - a[1] || a[0].localeComp
 ---
 <Base title="Tags — prrath.notes">
   <div class="wrap">
-    <div style="padding-top:2rem"><h1>Tags</h1>
-    <p style="color:var(--ink-2);margin:.3rem 0 1.2rem">Everything, cross-cut.</p></div>
+    <div><h1>Tags</h1>
+    <p>Everything, cross-cut.</p></div>
     <div class="tags">
       {tags.map(([t, n]) => (
-        <a class="tag" href={`/tags/${t}/`} style="font-size:.9rem;padding:.35rem .8rem">#{t} <span style="opacity:.55">{n}</span></a>
+        <a class="tag" href={`/tags/${t}/`}>#{t} <span>{n}</span></a>
       ))}
     </div>
   </div>

@@ -13,10 +13,6 @@ const isActive = (p) => path === p || (p !== '/' && path.startsWith(p));
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>" />
-  <script is:inline>
-    const t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.dataset.theme = t;
-  </script>
 </head>
 <body>
   <header class="site-header">
@@ -26,7 +22,6 @@ const isActive = (p) => path === p || (p !== '/' && path.startsWith(p));
         <a href="/words" aria-current={isActive('/words') ? 'page' : undefined}>Words</a>
         <a href="/blog" aria-current={isActive('/blog') ? 'page' : undefined}>Blog</a>
         <a class="nav-search" href="/search" aria-current={isActive('/search') ? 'page' : undefined}>Search</a>
-        <button class="theme-btn" id="theme-btn" aria-label="Toggle theme">◐</button>
       </nav>
     </div>
   </header>
@@ -37,11 +32,6 @@ const isActive = (p) => path === p || (p !== '/' && path.startsWith(p));
     <div class="wrap">Written and kept by prrath · built with Astro · <a href="/search">search everything</a></div>
   </footer>
   <script is:inline>
-    document.getElementById('theme-btn').onclick = () => {
-      const n = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = n;
-      localStorage.setItem('theme', n);
-    };
     // "/" anywhere jumps to search
     document.addEventListener('keydown', (e) => {
       if (e.key === '/' && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {

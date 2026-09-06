@@ -13,7 +13,7 @@ const letters = Object.keys(groups).sort();
   <div class="wrap">
     <div>
       <h1>Words</h1>
-      <p>{words.length} collected. Each one with what it means and a sentence that made it stick.</p>
+      <p>{words.length} collected.</p>
       <div class="tags">
         {letters.map(l => <a class="tag" href={`#${l}`}>{l}</a>)}
       </div>

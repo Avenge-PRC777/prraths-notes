@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /write
+Disallow: /write.html
+Allow: /

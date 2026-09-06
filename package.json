@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "cp src/styles/global.css public/write.css && astro build",
     "preview": "astro preview",
     "new": "node new.mjs",
     "write": "node edit.mjs"

@@ -1,9 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "prraths-notes",
-  "compatibility_date": "2026-09-05",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-09-04",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "404-page"
+  },
+  "vars": {
+    "GITHUB_REPO": "Avenge-PRC777/prraths-notes"
   }
 }

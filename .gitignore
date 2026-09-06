@@ -4,3 +4,6 @@ dist/
 .DS_Store
 package-lock.json
 .npmrc
+.dev.vars
+.wrangler/
+public/write.css

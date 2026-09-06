@@ -76,8 +76,8 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === '/' || url.pathname === '/index.html') {
     return send(200, 'text/html; charset=utf-8', fs.readFileSync(path.join(ROOT, 'editor/index.html')));
   }
-  if (url.pathname === '/app.js') {
-    return send(200, 'text/javascript; charset=utf-8', fs.readFileSync(path.join(ROOT, 'editor/app.js')));
+  if (url.pathname === '/editor.js' || url.pathname === '/app.js') {
+    return send(200, 'text/javascript; charset=utf-8', fs.readFileSync(path.join(ROOT, 'public/editor.js')));
   }
   if (url.pathname.startsWith('/images/')) {
     const name = path.basename(decodeURIComponent(url.pathname));

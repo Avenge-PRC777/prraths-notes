@@ -3,11 +3,19 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const form = $('#form');
 const status = $('#status');
 const DRAFT = 'writing-desk-draft';
+// Online build talks to the Worker; the local server answers the same paths.
+const ONLINE = document.body.dataset.mode === 'online';
 
 let type = 'word';
 let existing = { word: [], blog: [] };
 
-fetch('/api/existing').then(r => r.json()).then(e => { existing = e; render(); }).catch(() => {});
+const api = (path, opts = {}) =>
+  fetch(path, { credentials: 'same-origin', ...opts });
+
+function loadExisting() {
+  api('/api/existing').then(r => r.ok ? r.json() : null).then(e => { if (e) { existing = e; render(); } }).catch(() => {});
+}
+loadExisting();
 
 /* ---------- tiny markdown renderer (preview only) ---------- */
 const esc = (s) => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -206,11 +214,12 @@ async function doSave() {
   status.className = 'status';
   status.textContent = 'Saving…';
   try {
-    const res = await fetch('/api/save', {
+    const res = await api('/api/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...d, overwrite: !!overwrite }),
     });
+    if (res.status === 401) { showLogin(); throw new Error('Session expired — sign in again.'); }
     const j = await res.json();
     if (!res.ok) throw new Error(j.error || 'Save failed.');
     status.className = 'status ok';
@@ -269,11 +278,12 @@ async function uploadImage(file, suggestedName) {
   insertAtCursor(placeholder);
 
   try {
-    const r = await fetch('/api/upload', {
+    const r = await api('/api/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: b64, mime: file.type, name }),
     });
+    if (r.status === 401) { showLogin(); throw new Error('Session expired — sign in again.'); }
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'Upload failed.');
     bodyEl.value = bodyEl.value.replace(placeholder, `\n![${name}](${j.url})\n`);
@@ -310,5 +320,53 @@ bodyEl.addEventListener('drop', (e) => {
   uploadImage(f);
 });
 
+function showLogin() {
+  const el = document.getElementById('login');
+  if (el) el.hidden = false;
+}
+window.__loadExisting = loadExisting;
+
 restore();
 render();
+
+/* ---------- online: sign in / sign out ---------- */
+if (ONLINE) {
+  const overlay = document.getElementById('login');
+  const lform = document.getElementById('login-form');
+  const lerr = document.getElementById('login-err');
+  const lbtn = document.getElementById('login-btn');
+
+  // Already have a valid session cookie? Skip the overlay.
+  api('/api/me')
+    .then((r) => { if (r.ok) { overlay.hidden = true; loadExisting(); } })
+    .catch(() => {});
+
+  lform.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    lerr.textContent = '';
+    lbtn.disabled = true;
+    lbtn.textContent = 'Checking…';
+    try {
+      const r = await api('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: document.getElementById('pw').value }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Sign in failed.');
+      overlay.hidden = true;
+      document.getElementById('pw').value = '';
+      loadExisting();
+    } catch (err) {
+      lerr.textContent = err.message;
+    } finally {
+      lbtn.disabled = false;
+      lbtn.textContent = 'Sign in';
+    }
+  });
+
+  document.getElementById('logout').onclick = async () => {
+    await api('/api/logout', { method: 'POST' }).catch(() => {});
+    location.reload();
+  };
+}

@@ -53,8 +53,10 @@ const json = (obj, status = 200, headers = {}) =>
 
 /* ---------------- GitHub ---------------- */
 
+const REPO = (env) => env.GITHUB_REPO || 'Avenge-PRC777/prraths-notes';
+
 const gh = (env, path, init = {}) =>
-  fetch(`https://api.github.com/repos/${env.GITHUB_REPO}${path}`, {
+  fetch(`https://api.github.com/repos/${REPO(env)}${path}`, {
     ...init,
     headers: {
       Authorization: `Bearer ${env.GITHUB_TOKEN}`,
@@ -136,8 +138,10 @@ export default {
 
     if (!p.startsWith('/api/')) return env.ASSETS.fetch(req);
 
-    const configured = env.ADMIN_PASSWORD_HASH && env.SESSION_SECRET && env.GITHUB_TOKEN && env.GITHUB_REPO;
-    if (!configured) return json({ error: 'Writer is not configured on the server yet.' }, 503);
+    const missing = ['ADMIN_PASSWORD_HASH', 'SESSION_SECRET', 'GITHUB_TOKEN'].filter((k) => !env[k]);
+    if (missing.length) {
+      return json({ error: `Server is missing: ${missing.join(', ')}.` }, 503);
+    }
 
     /* --- login --- */
     if (p === '/api/login' && req.method === 'POST') {

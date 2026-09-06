@@ -65,6 +65,9 @@ main { padding-bottom: 2rem; }
 .nav a { font-family: var(--sans); font-size: .82rem; color: var(--ink-2); text-decoration: none; letter-spacing: .01em; }
 .nav a:hover { color: var(--link-hov); }
 .nav a[aria-current="page"] { color: var(--ink); border-bottom: 1.5px solid var(--ink); padding-bottom: 2px; }
+/* Private, so it sits quieter than the real nav items. */
+.nav a.nav-admin { display: inline-flex; align-items: center; color: var(--ink-3); }
+.nav a.nav-admin:hover { color: var(--link-hov); }
 
 /* ---- type labels ---- */
 .badge { font-family: var(--sans); font-size: .64rem; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-3); }

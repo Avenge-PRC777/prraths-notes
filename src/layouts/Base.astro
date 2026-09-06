@@ -26,7 +26,7 @@ const isActive = (p) => path === p || (p !== '/' && path.startsWith(p));
         <a href="/words" aria-current={isActive('/words') ? 'page' : undefined}>Words</a>
         <a href="/concepts" aria-current={isActive('/concepts') ? 'page' : undefined}>Concepts</a>
         <a href="/blog" aria-current={isActive('/blog') ? 'page' : undefined}>Blog</a>
-        <a href="/search" aria-current={isActive('/search') ? 'page' : undefined}>Search</a>
+        <a class="nav-search" href="/search" aria-current={isActive('/search') ? 'page' : undefined}>Search</a>
         <button class="theme-btn" id="theme-btn" aria-label="Toggle theme">◐</button>
       </nav>
     </div>

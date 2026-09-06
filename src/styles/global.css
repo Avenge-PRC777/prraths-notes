@@ -179,3 +179,24 @@ main { padding-bottom: 2rem; }
 .prose table { border-collapse: collapse; width: 100%; margin: 1.4rem 0; font-size: .93rem; }
 .prose th, .prose td { border: 1px solid var(--rule); padding: .55rem .7rem; text-align: left; }
 .prose th { background: var(--paper-2); font-weight: 600; }
+
+/* ---- small screens ---- */
+@media (max-width: 560px) {
+  .header-inner { gap: .7rem; padding: .7rem 1rem; }
+  .brand { font-size: 1rem; }
+  .nav { gap: .75rem; }
+  .nav a { font-size: .82rem; }
+  .theme-btn { width: 28px; height: 28px; }
+  .wrap { padding: 0 1.1rem; }
+  .hero { padding: 2rem 0 .5rem; }
+  .stats { gap: 1.4rem; }
+  .grid { grid-template-columns: 1fr; }
+  .prose table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+@media (max-width: 400px) {
+  .nav { gap: .6rem; }
+  .nav a { font-size: .78rem; }
+}
+@media (max-width: 380px) {
+  .nav-search { display: none; }  /* reachable via "/" and the home search box */
+}

@@ -1,5 +1,5 @@
 ---
-title: On explaining things simply
+title: "Fucking hell"
 blurb: "“Explain it like I am five” is good advice that is usually followed badly. The failure mode is leaving things out."
 tags: [writing, thinking, learning]
 added: 2026-08-24
